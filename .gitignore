@@ -1,0 +1,23 @@
+# Dependencies and environments
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+
+# Private data never belongs in this repository.
+# Real recordings, exported session bundles and replay outputs stay outside Git.
+private/
+recordings/
+sessions/
+*.zip
+*-raw.csv
+*-windows.csv
+*-metadata.json
+!fixtures/synthetic/**
+
+# Local tooling
+.DS_Store
+.vscode/
+.idea/
+*.log
+tmp/

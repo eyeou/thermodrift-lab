@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#070A22">
+  <title>Thermodrift Lab</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="../src/design/tokens.css">
+  <link rel="stylesheet" href="../src/design/instrument.css">
+  <style>
+    .hm-intro { max-width: 68ch; display: grid; gap: var(--td-space-1); }
+    .hm-intro h1 { font-size: var(--td-text-2xl); text-shadow: var(--td-shadow-title); }
+    .hm-apps { display: grid; gap: var(--td-space-3); grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+    .hm-app p { color: var(--td-color-ink-muted); }
+    .hm-links { display: flex; flex-wrap: wrap; gap: var(--td-space-1); }
+    .hm-links a { text-decoration: none; display: inline-flex; align-items: center; }
+    .hm-storage { display: flex; flex-wrap: wrap; gap: var(--td-space-1) var(--td-space-3); align-items: center; font-size: var(--td-text-sm); }
+    .hm-storage p { color: var(--td-color-ink-muted); }
+  </style>
+</head>
+<body>
+  <div class="td-shell" id="app"></div>
+  <script type="module" src="home.js"></script>
+</body>
+</html>

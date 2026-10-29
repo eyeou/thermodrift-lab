@@ -1,0 +1,293 @@
+{
+  "generated_from": "tokens.json v0.2.0",
+  "pairs": [
+    {
+      "name": "ink-primary on #070A22",
+      "fg": "#F2F2F2",
+      "bg": "#070A22",
+      "ratio": 17.44,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "name": "ink-muted on #070A22",
+      "fg": "#A2AAC8",
+      "bg": "#070A22",
+      "ratio": 8.48,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "name": "data-rose on #070A22 (graphics)",
+      "fg": "#E5606E",
+      "bg": "#070A22",
+      "ratio": 5.79,
+      "min": 3,
+      "pass": true
+    },
+    {
+      "name": "data-periwinkle on #070A22 (graphics)",
+      "fg": "#6F86F2",
+      "bg": "#070A22",
+      "ratio": 5.92,
+      "min": 3,
+      "pass": true
+    },
+    {
+      "name": "data-sand on #070A22 (graphics)",
+      "fg": "#E8C18D",
+      "bg": "#070A22",
+      "ratio": 11.57,
+      "min": 3,
+      "pass": true
+    },
+    {
+      "name": "data-neutral on #070A22 (graphics)",
+      "fg": "#8A8FA8",
+      "bg": "#070A22",
+      "ratio": 6.11,
+      "min": 3,
+      "pass": true
+    },
+    {
+      "name": "status-ready on #070A22 (text)",
+      "fg": "#8FD694",
+      "bg": "#070A22",
+      "ratio": 11.36,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "name": "status-live on #070A22 (text)",
+      "fg": "#5CD6E8",
+      "bg": "#070A22",
+      "ratio": 11.38,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "name": "status-warning on #070A22 (text)",
+      "fg": "#F5C451",
+      "bg": "#070A22",
+      "ratio": 11.99,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "name": "status-error on #070A22 (text)",
+      "fg": "#FF9B73",
+      "bg": "#070A22",
+      "ratio": 9.47,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "name": "status-stale on #070A22 (text)",
+      "fg": "#A2AAC8",
+      "bg": "#070A22",
+      "ratio": 8.48,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "name": "status-simulated on #070A22 (text)",
+      "fg": "#C9A7FF",
+      "bg": "#070A22",
+      "ratio": 9.72,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "name": "data-rose on #070A22 (text)",
+      "fg": "#E5606E",
+      "bg": "#070A22",
+      "ratio": 5.79,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "name": "data-periwinkle on #070A22 (text)",
+      "fg": "#6F86F2",
+      "bg": "#070A22",
+      "ratio": 5.92,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "name": "brand-brass on #070A22 (text)",
+      "fg": "#C9A86A",
+      "bg": "#070A22",
+      "ratio": 8.64,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "name": "ink-primary on #0B0F28",
+      "fg": "#F2F2F2",
+      "bg": "#0B0F28",
+      "ratio": 16.85,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "name": "ink-muted on #0B0F28",
+      "fg": "#A2AAC8",
+      "bg": "#0B0F28",
+      "ratio": 8.19,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "name": "data-rose on #0B0F28 (graphics)",
+      "fg": "#E5606E",
+      "bg": "#0B0F28",
+      "ratio": 5.6,
+      "min": 3,
+      "pass": true
+    },
+    {
+      "name": "data-periwinkle on #0B0F28 (graphics)",
+      "fg": "#6F86F2",
+      "bg": "#0B0F28",
+      "ratio": 5.72,
+      "min": 3,
+      "pass": true
+    },
+    {
+      "name": "data-sand on #0B0F28 (graphics)",
+      "fg": "#E8C18D",
+      "bg": "#0B0F28",
+      "ratio": 11.18,
+      "min": 3,
+      "pass": true
+    },
+    {
+      "name": "data-neutral on #0B0F28 (graphics)",
+      "fg": "#8A8FA8",
+      "bg": "#0B0F28",
+      "ratio": 5.91,
+      "min": 3,
+      "pass": true
+    },
+    {
+      "name": "status-ready on #0B0F28 (text)",
+      "fg": "#8FD694",
+      "bg": "#0B0F28",
+      "ratio": 10.97,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "name": "status-live on #0B0F28 (text)",
+      "fg": "#5CD6E8",
+      "bg": "#0B0F28",
+      "ratio": 10.99,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "name": "status-warning on #0B0F28 (text)",
+      "fg": "#F5C451",
+      "bg": "#0B0F28",
+      "ratio": 11.59,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "name": "status-error on #0B0F28 (text)",
+      "fg": "#FF9B73",
+      "bg": "#0B0F28",
+      "ratio": 9.15,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "name": "status-stale on #0B0F28 (text)",
+      "fg": "#A2AAC8",
+      "bg": "#0B0F28",
+      "ratio": 8.19,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "name": "status-simulated on #0B0F28 (text)",
+      "fg": "#C9A7FF",
+      "bg": "#0B0F28",
+      "ratio": 9.39,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "name": "data-rose on #0B0F28 (text)",
+      "fg": "#E5606E",
+      "bg": "#0B0F28",
+      "ratio": 5.6,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "name": "data-periwinkle on #0B0F28 (text)",
+      "fg": "#6F86F2",
+      "bg": "#0B0F28",
+      "ratio": 5.72,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "name": "brand-brass on #0B0F28 (text)",
+      "fg": "#C9A86A",
+      "bg": "#0B0F28",
+      "ratio": 8.35,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "name": "white on brand-red",
+      "fg": "#FFFFFF",
+      "bg": "#B61E20",
+      "ratio": 6.57,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "name": "inverse on brand-red-light",
+      "fg": "#070A22",
+      "bg": "#FFD4D5",
+      "ratio": 14.53,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "name": "inverse on offwhite",
+      "fg": "#070A22",
+      "bg": "#FFF4F4",
+      "ratio": 18.13,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "name": "inverse on ivory (photo mats)",
+      "fg": "#070A22",
+      "bg": "#F3EADB",
+      "ratio": 16.37,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "name": "focus ring on base (UI component)",
+      "fg": "#F2F2F2",
+      "bg": "#070A22",
+      "ratio": 17.44,
+      "min": 3,
+      "pass": true
+    },
+    {
+      "name": "brand-red on base (NOT for text or lines)",
+      "fg": "#B61E20",
+      "bg": "#070A22",
+      "ratio": 2.97,
+      "min": 0,
+      "pass": true
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#070A22">
+  <title>Design catalogue · Thermodrift Lab</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="../../src/design/tokens.css">
+  <link rel="stylesheet" href="../../src/design/instrument.css">
+  <style>
+    .ct-swatches { display: grid; gap: var(--td-space-1); grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+    .ct-swatch { border: 1px solid var(--td-color-surface-border); font-size: var(--td-text-xs); }
+    .ct-swatch i { display: block; height: 48px; }
+    .ct-swatch span { display: block; padding: 6px 8px; overflow-wrap: anywhere; }
+    .ct-row { display: flex; flex-wrap: wrap; gap: var(--td-space-2); align-items: start; }
+    .ct-row > * { min-width: 0; }
+    .ct-states { display: grid; gap: var(--td-space-2); grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); }
+    .ct-type p { margin-bottom: 6px; }
+    .ct-montages { display: grid; gap: var(--td-space-2); grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
+    .ct-regions { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: var(--td-text-xs); color: var(--td-color-ink-muted); }
+    .ct-regions b { color: var(--td-color-ink-primary); }
+    .ct-motion { width: 40px; height: 4px; background: var(--td-color-status-live); animation: ct-slide 2.4s ease-in-out infinite alternate; }
+    @keyframes ct-slide { to { transform: translateX(200px); } }
+    @media (prefers-reduced-motion: reduce) { .ct-motion { animation: none; } }
+  </style>
+</head>
+<body>
+  <div class="td-shell" id="app"></div>
+  <script type="module" src="catalog.js"></script>
+</body>
+</html>

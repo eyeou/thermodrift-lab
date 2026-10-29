@@ -1,0 +1,19 @@
+{
+  "name": "thermodrift-lab",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "Local-first biosignal learning instruments by Thermodrift. First app: Berger Lab (eyes-open/closed alpha, NPG Lite over Web Bluetooth).",
+  "type": "module",
+  "engines": {
+    "node": ">=22.6"
+  },
+  "scripts": {
+    "tokens": "node tools/build-tokens.mjs",
+    "test": "node --test \"tests/**/*.test.js\"",
+    "serve": "node tools/serve.mjs --port 8072",
+    "replay:berger": "node tools/replay-berger-v3.mjs",
+    "check": "node tools/build-tokens.mjs --check && node --test \"tests/**/*.test.js\" && node tools/privacy-scan.mjs"
+  },
+  "devDependencies": {}
+}

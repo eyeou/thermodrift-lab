@@ -17,7 +17,9 @@ flowchart LR
 
 ## Quick start
 
-Requirements: Node.js 22.6 or newer (only for the local server and tests) and desktop Chrome or Edge (Web Bluetooth).
+Hosted: <https://app.thermodrift.com/berger/> (desktop Chrome or Edge). Sessions stay in your browser.
+
+To run it locally — requirements: Node.js 22.6 or newer (only for the local server and tests) and desktop Chrome or Edge (Web Bluetooth).
 
 ```sh
 npm run serve        # http://127.0.0.1:8072/apps/

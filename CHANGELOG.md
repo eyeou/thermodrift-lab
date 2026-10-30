@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.1.0 — unreleased
+## 0.1.0 — 2026-10-30
+
+First public release. Hosted at <https://app.thermodrift.com> (Berger Lab at `/berger/`).
+
+Approvals, recorded per the release checklist: public repository and hosting approved by the owner, Emeric Yeou, on 30 October 2026; aggregate Berger results (per-pair power, ratios, median, closed-eye peak range) approved the same day. Raw recordings stay private.
 
 First public candidate. Berger Lab rebuilt from the single-file Berger Lab 3.0.1 on shared modules. Code under the MIT licence.
 

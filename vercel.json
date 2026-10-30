@@ -1,0 +1,23 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    { "source": "/berger", "destination": "/berger/", "permanent": true },
+    { "source": "/report", "destination": "/report/", "permanent": true },
+    { "source": "/catalog", "destination": "/catalog/", "permanent": true }
+  ],
+  "rewrites": [
+    { "source": "/", "destination": "/apps/index.html" },
+    { "source": "/home.js", "destination": "/apps/home.js" },
+    { "source": "/registry.js", "destination": "/apps/registry.js" },
+    { "source": "/:app(berger|report|catalog)/:path*", "destination": "/apps/:app/:path*" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
+    }
+  ]
+}

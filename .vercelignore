@@ -1,0 +1,8 @@
+# The hosted app (app.thermodrift.com) serves apps/, src/ and brand/ only.
+/.claude
+/.github
+/docs
+/fixtures
+/tests
+/tools
+/*.md

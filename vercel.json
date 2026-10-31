@@ -9,6 +9,7 @@
     { "source": "/", "destination": "/apps/index.html" },
     { "source": "/home.js", "destination": "/apps/home.js" },
     { "source": "/registry.js", "destination": "/apps/registry.js" },
+    { "source": "/:app(berger|report|catalog)/", "destination": "/apps/:app/index.html" },
     { "source": "/:app(berger|report|catalog)/:path*", "destination": "/apps/:app/:path*" }
   ],
   "headers": [

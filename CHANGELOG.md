@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Hosting: `/berger/`, `/report/` and `/catalog/` now serve their page (the folder index was not rewritten).
+
 ## 0.1.0 — 2026-10-30
 
 First public release. Hosted at <https://app.thermodrift.com> (Berger Lab at `/berger/`).

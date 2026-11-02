@@ -210,13 +210,13 @@ export const SESSION_FORMATS = Object.freeze({
   'holotropic-style': Object.freeze({
     id: 'holotropic-style',
     label: 'Holotropic-style',
-    length: 'about 65 minutes',
+    length: 'about 60 minutes',
     summary: 'About forty minutes of deep connected breathing to music, guided live, then a closing sequence and a long recovery lying still.',
     need: 'Music, and a trained facilitator to guide you live',
     step: 'Start the music and press V. About forty minutes of deep connected breathing follow, guided live. The closing sequence is fast breaths, an exhale hold, an inhale hold with a whole-body contraction, and shaking. A long recovery lying still ends the session. While acquiring, B marks breathing, H a hold, R the start of the recovery and M anything else, and a helper can press them for you. If you film it, three phone taps with three jaw clenches tie the video to the recording, at both ends.',
     keys: 'Keys while acquiring: V music start · B breathing · H hold · R recovery start · M marker.',
     key: Object.freeze([{ kind: 'breathing', label: 'Deep connected breathing' }, { kind: 'closing', label: 'Closing sequence' }, { kind: 'recovery', label: 'Long recovery' }]),
-    parts: Object.freeze([{ kind: 'breathing', seconds: 2400 }, { kind: 'closing', seconds: 240 }, { kind: 'recovery', seconds: 1200 }]),
+    parts: Object.freeze([{ kind: 'breathing', seconds: 2400 }, { kind: 'closing', seconds: 240 }, { kind: 'recovery', seconds: 960 }]),
     care: 'Run the long format with a trained facilitator present.',
     markers: Object.freeze({ v: 'music start', r: 'recovery start' }),
     completionCues: Object.freeze({ 'rest-before': 'Rest done. Open your eyes. Press V when the music starts.' }),
@@ -276,7 +276,7 @@ const BASE_GUIDE = Object.freeze({
     'breath-demo': { purpose: 'The signal-check blocks at 6 s each, for trying the interface. Not an experiment.' },
   },
   care: 'Lying down, never in or near water, standing or driving. Fast breathing delays the urge to breathe, so give any hold a time limit. Stop for chest pain, faintness or anything unusual. With a heart condition, epilepsy or a pregnancy, ask a doctor first.',
-  limits: 'One person, one session: descriptive, never proof of an effect. ADC counts, not microvolts. Scalp EEG above about 20 Hz carries muscle activity, more so during effortful breathing.',
+  limits: 'One person, one session: descriptive, never proof of an effect. Raw ADC counts, because the gain is not calibrated. Scalp EEG above about 20 Hz carries muscle activity, more so during effortful breathing.',
 });
 
 /** The written protocol shown in the Protocol tab, for one format. Block tables come from the protocol definitions. */

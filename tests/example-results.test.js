@@ -15,7 +15,7 @@ test('example results: every chart is marked as an example, in its picture and i
       assert.doesNotMatch(svg, /NaN|undefined|µV|PSD/);
     }
   }
-  assert.equal(EXAMPLE_NOTE, 'Not a recording. Inspired by real data, smoothed and rounded.');
+  assert.equal(EXAMPLE_NOTE, 'Not a recording. Inspired from real experimental data.');
 });
 
 test('example results: the figures shown agree with each other', () => {
@@ -63,11 +63,11 @@ test('example results: the long format has the shape its heading and reading sta
   const between = (series, from, to) => series.filter((_, i) => i * e.step_min >= from && i * e.step_min <= to);
 
   assert.equal(e.phases[0].start, 0);
-  assert.equal(e.phases.at(-1).end, 70, 'about 70 minutes');
+  assert.equal(e.phases.at(-1).end, 66, 'about 66 minutes');
   e.phases.slice(1).forEach((p, i) => assert.equal(p.start, e.phases[i].end, 'the phases leave no gap'));
   assert.deepEqual(e.phases.filter((p) => p.kind !== 'rest').map((p) => [p.kind, (p.end - p.start) * 60]), SESSION_FORMATS['holotropic-style'].parts.map((p) => [p.kind, p.seconds]), 'the plan the Protocol tab shows');
   for (const series of [e.breathing, e.heart, e.theta, e.alpha]) {
-    assert.equal(series.length, 141);
+    assert.equal(series.length, 133);
     assert.ok(series.every(Number.isFinite) && series.every((v) => v > 0));
   }
 
@@ -80,12 +80,12 @@ test('example results: the long format has the shape its heading and reading sta
 
   assert.ok(Math.abs(at(e.alpha, 0) - 1) <= 0.1);
   assert.ok(between(e.alpha, 28, 47).every((v) => Math.abs(v - e.alpha_plateau) <= 0.05), 'alpha falls over the same stretch');
-  assert.ok(at(e.alpha, 70) < 0.9, 'alpha stays below its starting level');
+  assert.ok(at(e.alpha, 66) < 0.9, 'alpha stays below its starting level');
 
   assert.ok(between(e.breathing, 8, 42).every((v) => v >= 3.5 && v <= 5), 'breathing stays about fourfold');
-  assert.ok(between(e.breathing, 52, 70).every((v) => Math.abs(v - 1) <= 0.1), 'breathing settles in the recovery');
+  assert.ok(between(e.breathing, 52, 66).every((v) => Math.abs(v - 1) <= 0.1), 'breathing settles in the recovery');
   assert.ok(at(e.heart, 20) > at(e.heart, 0) + 20, 'heart rate climbs with the breathing');
-  assert.ok(between(e.heart, 55, 70).every((v) => v <= 75), 'heart rate settles in the recovery');
+  assert.ok(between(e.heart, 55, 66).every((v) => v <= 75), 'heart rate settles in the recovery');
 
   const reading = e.reading.join(' ');
   assert.match(reading, /sustained high ventilation lowers CO₂ and brain blood flow, which slows the EEG/);
@@ -96,7 +96,7 @@ test('example results: the long format has the shape its heading and reading sta
 test('example results: the long chart keeps one scale per row on one time axis', () => {
   for (const width of [256, 300, 340, 520, 1040]) {
     const svg = longSessionSvg(BREATHWORK_LONG_EXAMPLE, { width });
-    for (const words of ['Breathing, depth × rate', 'Heart rate (bpm)', 'Theta and alpha at Oz', 'Theta 8×', 'Alpha 0.4×', width < 300 ? '>Minutes from the start<' : '>Minutes from the start of the rest before<', '>70<', 'Theta 4–8 Hz', 'Alpha 8–13 Hz']) assert.ok(svg.includes(words), `${width}: ${words}`);
+    for (const words of ['Breathing, depth × rate', 'Heart rate (bpm)', 'Theta and alpha at Oz', 'Theta 8×', 'Alpha 0.4×', width < 300 ? '>Minutes from the start<' : '>Minutes from the start of the rest before<', '>60<', 'Theta 4–8 Hz', 'Alpha 8–13 Hz']) assert.ok(svg.includes(words), `${width}: ${words}`);
     assert.equal(svg.match(/<path d="M[^"]*" fill="none" stroke="[^"]*" stroke-width="1\.7"/g).length, 4, 'breathing, heart rate, theta and alpha');
     const anchored = [...svg.matchAll(/<text x="(-?[\d.]+)"/g)].map((m) => Number(m[1]));
     assert.ok(anchored.every((v) => v >= 0 && v <= width), `${width}: every label inside the picture`);

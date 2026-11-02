@@ -40,8 +40,8 @@ test('formats: two of them, with the lengths they state', () => {
   assert.deepEqual(long.map((p) => p.kind), ['breathing', 'closing', 'recovery']);
   assert.equal(long[0].seconds, 40 * 60, 'about forty minutes of connected breathing');
   assert.ok(long[2].seconds > long[1].seconds, 'a long recovery');
-  assert.match(SESSION_FORMATS[LONG].length, /65/);
-  assert.equal(secondsOf(long), 64 * 60);
+  assert.match(SESSION_FORMATS[LONG].length, /60/);
+  assert.equal(secondsOf(long), 60 * 60);
 });
 
 test('guide: only the session step, the needs and the time follow the format', () => {
@@ -57,7 +57,7 @@ test('guide: only the session step, the needs and the time follow the format', (
   assert.match(session(short), /exhale hold and a recovery breath/);
   for (const words of [/forty minutes of deep connected breathing/, /guided live/, /fast breaths/, /an exhale hold/, /an inhale hold with a whole-body contraction/, /shaking/, /long recovery lying still/]) assert.match(session(long), words);
   assert.match(short.time, /about 16 minutes/);
-  assert.match(long.time, /about 65 minutes/);
+  assert.match(long.time, /about 60 minutes/);
   assert.ok(long.needs.some((n) => /trained facilitator/.test(n)));
   assert.ok(short.needs.some((n) => /audio or video/.test(n)));
   assert.equal(short.needs.length, long.needs.length);

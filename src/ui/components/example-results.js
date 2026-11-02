@@ -1,6 +1,6 @@
 /**
  * Example results for the Results tab: what a complete run can look like, before any recording.
- * Round figures inspired by real sessions, smoothed. They stay in this view: nothing here reaches a
+ * Round figures inspired by real experimental data. They stay in this view: nothing here reaches a
  * session, the browser store or an export, and every chart carries an EXAMPLE mark.
  */
 import { h } from '../dom.js';
@@ -12,7 +12,7 @@ const median = (values) => {
 };
 
 export const EXAMPLE_LABEL = 'Example results';
-export const EXAMPLE_NOTE = 'Not a recording. Inspired by real data, smoothed and rounded.';
+export const EXAMPLE_NOTE = 'Not a recording. Inspired from real experimental data.';
 
 // ---------------------------------------------------------------- Berger Effect data
 const PAIRS = [[1, 11, 64], [2, 10, 88], [3, 9.5, 92], [4, 9, 82]]
@@ -113,7 +113,7 @@ export const BREATHWORK_EXAMPLE = Object.freeze({
   reading: [
     'At rest, alpha at Oz is many times higher with the eyes closed, before and after: the EEG channel can be read.',
     'Heart rate climbs across the rounds of deep breathing and drops in each hold.',
-    'Muscle activity rises with the rounds, which is why EEG during deep breathing is left out.',
+    'Muscle activity rises with the rounds, which is why EEG during the deep breaths is left out.',
     'In the holds, theta at Oz builds up while alpha falls: the EEG slows. In a longer session it went much further. Slowing is the classic response to sustained high ventilation, which lowers CO₂ and brain blood flow. Without a CO₂ sensor this stays an interpretation.',
     'After the session, heart rate is higher and RMSSD and eyes-closed alpha are lower than before. One session describes this; it does not show the breathing caused it.',
   ],
@@ -127,8 +127,8 @@ const LONG_PHASES = [
   { kind: 'rest', names: ['Rest'], start: 0, end: 3 },
   { kind: 'breathing', names: ['Deep connected breathing', 'Breathing'], start: 3, end: 43 },
   { kind: 'closing', names: ['Closing sequence', 'Closing'], start: 43, end: 47 },
-  { kind: 'recovery', names: ['Long recovery', 'Recovery'], start: 47, end: 67 },
-  { kind: 'rest', names: ['Rest'], start: 67, end: 70 },
+  { kind: 'recovery', names: ['Long recovery', 'Recovery'], start: 47, end: 63 },
+  { kind: 'rest', names: ['Rest'], start: 63, end: 66 },
 ];
 
 /** Knots joined by straight lines, on a log scale for a ratio, then a five-point moving average. */
@@ -151,10 +151,10 @@ export const BREATHWORK_LONG_EXAMPLE = Object.freeze({
   kind: 'breathwork-long',
   step_min: LONG_STEP_MIN,
   phases: LONG_PHASES,
-  breathing: longSeries([[0, 1], [3, 1], [6, 4], [43, 4.5], [43.5, 6.5], [44.5, 6.5], [45.5, 0.5], [46.5, 0.5], [47, 2], [50, 1], [70, 1]]),
-  heart: longSeries([[0, 65], [3, 65], [8, 90], [43, 95], [44.5, 110], [46, 95], [47, 100], [52, 72], [70, 70]]),
-  theta: longSeries([[0, 1], [9, 1], [28, 8], [47, 8], [60, 1.5], [70, 1.2]], { ratio: true }),
-  alpha: longSeries([[0, 1], [6, 1], [28, 0.4], [47, 0.4], [62, 0.7], [70, 0.7]], { ratio: true }),
+  breathing: longSeries([[0, 1], [3, 1], [6, 4], [43, 4.5], [43.5, 6.5], [44.5, 6.5], [45.5, 0.5], [46.5, 0.5], [47, 2], [50, 1], [66, 1]]),
+  heart: longSeries([[0, 65], [3, 65], [8, 90], [43, 95], [44.5, 110], [46, 95], [47, 100], [52, 72], [66, 70]]),
+  theta: longSeries([[0, 1], [9, 1], [28, 8], [47, 8], [58, 1.5], [66, 1.2]], { ratio: true }),
+  alpha: longSeries([[0, 1], [6, 1], [28, 0.4], [47, 0.4], [58, 0.7], [66, 0.7]], { ratio: true }),
   theta_plateau: 8,
   alpha_plateau: 0.4,
   reading: [
@@ -297,7 +297,7 @@ export function longSessionSvg(example, { width: W = 1040 } = {}) {
     for (const [values, color] of row.lines) body += `<path d="${pathOf(values.map((v, i) => [x(i * step), y(v)]))}" fill="none" stroke="${color}" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/>`;
     for (const [minute, values, label, dy] of row.labels) body += text(x(minute), y(values[minute / step]) + dy, label, { size, anchor: 'middle', fill: INK, weight: 600 });
   }
-  body += xLabels([0, 10, 20, 30, 40, 50, 60, 70], x, stackBottom + size + 6, String, size);
+  body += xLabels([0, 10, 20, 30, 40, 50, 60], x, stackBottom + size + 6, String, size);
   const H = stackBottom + 48;
   body += text(W / 2, H - 6, W < 300 ? 'Minutes from the start' : 'Minutes from the start of the rest before', { size, anchor: 'middle', fill: INK });
   return svgChart({ W, H, mark: 'example', body, label: `A session of ${total} minutes on one time axis. Breathing depth × rate rises about fourfold and heart rate climbs. Theta at Oz stays flat for the first minutes, climbs to about ${thetaLabel} times the rest before and stays up until the recovery, while alpha falls to about ${alphaLabel} times.` });
@@ -352,7 +352,7 @@ export function exampleView(example, { onHide, formatLabel = null }) {
       draw: (width) => heartRateSvg(example, { width }),
     }),
     h('div', { class: 'td-example-pair' },
-      reportCard({ title: 'The EEG slows in the holds', sub: 'EEG is read in the rests and the holds. During deep breathing, muscle activity dominates the scalp signal.', width: 520, draw: (width) => slowingSvg(example, { width }) }),
+      reportCard({ title: 'The EEG slows in the holds', sub: 'EEG is read in the rests and the holds. During the deep breaths, muscle activity takes over the scalp signal.', width: 520, draw: (width) => slowingSvg(example, { width }) }),
       reportCard({ title: restFinding(example.rest_alpha), sub: 'Median 8–13 Hz power at Oz in each rest. Power depends on contact and gain.', hero: restHero(example.rest_alpha), width: 520, draw: (width) => restSvg(example, { width }) })),
     h('div', { class: 'td-example-pair' },
       h('div', { class: 'td-report-block' }, h('h3', { text: 'Rest before and after' }), table('Example: rest before and after', ['Measure', 'Before', 'After'], example.rest)),

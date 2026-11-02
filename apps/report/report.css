@@ -1,5 +1,5 @@
 .rp-chooser { display: flex; flex-wrap: wrap; gap: var(--td-space-1) var(--td-space-2); align-items: end; padding: var(--td-space-2) var(--td-space-3); border-bottom: 1px solid var(--td-color-surface-border); }
-.rp-chooser .td-field { min-width: 260px; flex: 1 1 320px; max-width: 560px; }
+.rp-chooser .td-field { min-width: 260px; flex: 1 1 420px; max-width: 760px; }
 .rp-chooser .rp-file { display: inline-flex; align-items: center; cursor: pointer; }
 .rp-chooser .rp-file input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .rp-chooser .rp-file:focus-within { outline: var(--td-focus-ring) solid var(--td-color-focus); outline-offset: 2px; }

@@ -35,8 +35,7 @@ const persistStatus = h('p', { role: 'status' });
 
 root.append(h('main', { class: 'td-main' },
   h('div', { class: 'hm-intro' },
-    h('h1', { text: 'Thermodrift Lab' }),
-    h('p', { class: 'td-muted', text: 'Open-source browser instruments for self-run biosignal experiments with an NPG Lite.' })),
+    h('h1', { text: 'Open-source browser instruments for self-run biosignal experiments with an NPG Lite.' })),
   h('div', { class: 'hm-apps' }, ...APPS.map((a) => h('section', { class: 'td-panel hm-app', 'aria-label': a.name },
     h('header', {}, h('h2', {}, h('span', { class: 'td-index', text: a.index }), a.name)),
     h('div', { class: 'td-body' }, h('p', { text: a.text }), h('div', { class: 'hm-links' }, ...a.links.map(([label, href, cls]) => h('a', { class: cls, href }, label))))))),

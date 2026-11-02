@@ -44,7 +44,7 @@ test('formats: two of them, with the lengths they state', () => {
   assert.equal(secondsOf(long), 60 * 60);
 });
 
-test('guide: only the session step, the needs and the time follow the format', () => {
+test('guide: only the session step and the needs follow the format', () => {
   const short = guideFor(SHORT), long = guideFor(LONG);
   assert.deepEqual(GUIDE, short, 'the default guide is the short format');
   assert.deepEqual(short.steps.map((s) => s.title), long.steps.map((s) => s.title));
@@ -56,8 +56,6 @@ test('guide: only the session step, the needs and the time follow the format', (
   assert.match(session(short), /four rounds of deep breathing/i);
   assert.match(session(short), /exhale hold and a recovery breath/);
   for (const words of [/forty minutes of deep connected breathing/, /guided live/, /fast breaths/, /an exhale hold/, /an inhale hold with a whole-body contraction/, /shaking/, /long recovery lying still/]) assert.match(session(long), words);
-  assert.match(short.time, /about 16 minutes/);
-  assert.match(long.time, /about 60 minutes/);
   assert.ok(long.needs.some((n) => /trained facilitator/.test(n)));
   assert.ok(short.needs.some((n) => /audio or video/.test(n)));
   assert.equal(short.needs.length, long.needs.length);

@@ -200,7 +200,7 @@ export const SESSION_FORMATS = Object.freeze({
     id: 'wim-hof-style',
     label: 'Wim Hof-style',
     length: 'about 16 minutes',
-    summary: 'A guided session of about 16 minutes: four rounds of deep breathing, each followed by an exhale hold and a recovery breath.',
+    summary: 'A guided session of about 16 minutes, with four rounds of deep breathing, each followed by an exhale hold and a recovery breath.',
     need: 'Your guided session, as audio or video',
     step: 'Start your guided audio or video and press V. Four rounds of deep breathing follow over about 16 minutes, each with an exhale hold and a recovery breath. While acquiring, B marks breathing, H a hold, R a recovery breath and M anything else. If you film it, three phone taps with three jaw clenches tie the video to the recording, at both ends.',
     keys: 'Keys while acquiring: V video start · B breathing · H hold · R recovery breath · M marker.',
@@ -257,17 +257,17 @@ export function sessionTimeline(formatId = DEFAULT_SESSION_FORMAT) {
 }
 
 const BASE_GUIDE = Object.freeze({
-  question: 'What do heart, brain, eye and muscle signals do around a guided breathing session, and which of them can be read during it?',
+  question: 'What happens in the body and the brain during a breathing session, and how much of it can actually be measured?',
   needs: ['NPG Lite with VibZ+ for six channels', 'Gold cups with paste for the head', 'Adhesive patches for ECG, EOG and EMG', 'Tape and a measuring tape', 'A phone on a tripod, if you want the video'],
   steps: [
-    { title: 'Place the electrodes', text: 'Follow the figures. Cups with paste, gauze and tape. Patches with a taped cable loop near each one, so a pull never reaches the skin.', tab: 'setup', tabLabel: 'Open the figures' },
-    { title: 'Fix the room', text: 'Kit on a mat, taped down, and never moved. Laptop on battery and at least a metre away, nothing charging from it: a laptop next to the kit can raise mains pickup.' },
-    { title: 'Lie down and look', text: 'Arms at your sides, palms up. Start acquisition. The ECG shows beats. On the 0–100 Hz spectrum, narrow lines at 33 and 67 Hz: check contacts and wiring.', tab: 'signal', tabLabel: 'Open the signal' },
+    { title: 'Place the electrodes', text: 'Follow the figures, with paste, gauze and tape for the gold cups. Leave a taped cable loop near each patch, so a pull never reaches the skin.', tab: 'setup', tabLabel: 'Open the figures' },
+    { title: 'Fix the room', text: 'Keep the kit on a mat, taped down. Keep the laptop on battery and at least a metre away, because a laptop next to the kit can raise mains pickup.' },
+    { title: 'Lie down and look', text: 'Arms at your sides, palms up. Start acquisition and look for beats on the ECG. If the 0–100 Hz spectrum shows narrow lines at 33 and 67 Hz, check the contacts and the wiring.', tab: 'signal', tabLabel: 'Open the signal' },
     { title: 'Signal check', text: 'Stillness, eyes closed, slow breathing, shrugs, deep breaths and a short hold, so each signal can be seen responding.', protocol: 'breath-check' },
     { title: 'Rest before', text: 'One minute with eyes open, two with eyes closed. It is the baseline for everything after.', protocol: 'rest-before' },
     { title: 'Your session' },
     { title: 'Rest after', text: 'The same three minutes. Stay lying until it ends.', protocol: 'rest-after' },
-    { title: 'Export', text: 'One recording, one file, and a test run stays flagged as a test. Write your notes before looking at any signal.', tab: 'recordings', tabLabel: 'Open the recordings' },
+    { title: 'Export', text: 'Each recording gives one file, and a test run stays flagged as a test. Write your notes before looking at any signal.', tab: 'recordings', tabLabel: 'Open the recordings' },
   ],
   protocols: {
     'breath-check': { purpose: 'Does each signal behave as expected under the conditions of the session?' },
@@ -275,8 +275,7 @@ const BASE_GUIDE = Object.freeze({
     'rest-after': { purpose: 'The same blocks as the rest before.' },
     'breath-demo': { purpose: 'The signal-check blocks at 6 s each, for trying the interface. Not an experiment.' },
   },
-  care: 'Lying down, never in or near water, standing or driving. Fast breathing delays the urge to breathe, so give any hold a time limit. Stop for chest pain, faintness or anything unusual. With a heart condition, epilepsy or a pregnancy, ask a doctor first.',
-  limits: 'One person, one session: descriptive, never proof of an effect. Raw ADC counts, because the gain is not calibrated. Scalp EEG above about 20 Hz carries muscle activity, more so during effortful breathing.',
+  care: 'Stay lying down, never in or near water, standing or driving. Stop for chest pain, faintness or anything unusual. With a heart condition, epilepsy or a pregnancy, ask a doctor first.',
 });
 
 /** The written protocol shown in the Protocol tab, for one format. Block tables come from the protocol definitions. */
@@ -287,7 +286,6 @@ export function guideFor(formatId = DEFAULT_SESSION_FORMAT) {
   return {
     ...BASE_GUIDE,
     needs,
-    time: `First setup about 25 minutes. Check and rests about 10 minutes, plus ${format.length} for your session.`,
     steps: BASE_GUIDE.steps.map((step) => (step.title === 'Your session' ? { ...step, text: format.step } : step)),
   };
 }

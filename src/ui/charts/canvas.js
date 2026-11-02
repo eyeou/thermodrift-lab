@@ -191,6 +191,62 @@ export function drawTrace(chart, { samples, fs = 500, range, unit, color = C.dat
 }
 
 /**
+ * Every channel stacked on one time axis, newest sample on the right. Each row has its own scale,
+ * named beside it, because ECG and EEG differ by orders of magnitude. Display only.
+ * @param {{rows:{name:string, detail?:string, samples:ArrayLike<number>|null, floor:number}[], fs?:number, status?:string, simulated?:boolean}} options
+ */
+export function drawStack(chart, { rows, fs = 500, status, simulated }) {
+  chart.draw((ctx, w, h) => {
+    const narrow = w < 560;
+    const box = { left: narrow ? 74 : 150, right: w - 8, top: 6, bottom: h - 34 };
+    const rowH = (box.bottom - box.top) / rows.length;
+    ctx.fillStyle = C.surface.panel;
+    ctx.fillRect(box.left, box.top, box.right - box.left, box.bottom - box.top);
+    rows.forEach((row, i) => {
+      const mid = box.top + rowH * (i + 0.5);
+      const samples = row.samples && row.samples.length > 1 && !status ? row.samples : null;
+      let mean = 0, peak = 0;
+      if (samples) {
+        for (let k = 0; k < samples.length; k++) mean += samples[k];
+        mean /= samples.length;
+        for (let k = 0; k < samples.length; k++) peak = Math.max(peak, Math.abs(samples[k] - mean));
+      }
+      const range = Math.max(row.floor, peak * 1.1);
+      ctx.strokeStyle = i ? C.surface.grid : 'transparent';
+      ctx.lineWidth = theme.chart['grid-width'];
+      ctx.beginPath(); ctx.moveTo(0, Math.round(mid - rowH / 2) + 0.5); ctx.lineTo(box.right, Math.round(mid - rowH / 2) + 0.5); ctx.stroke();
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = C.ink.primary;
+      ctx.font = `600 12px ${theme.font.ui}`;
+      ctx.fillText(row.name, 0, mid - (narrow ? 7 : 8));
+      ctx.fillStyle = C.ink.muted;
+      ctx.font = `11px ${theme.font.numeric}`;
+      ctx.fillText(`±${Math.round(range)}`, 0, mid + (narrow ? 7 : 8));
+      if (!narrow && row.detail) {
+        ctx.font = `11px ${theme.font.ui}`;
+        ctx.fillText(row.detail.length > 17 ? `${row.detail.slice(0, 16)}…` : row.detail, 42, mid + 8);
+      }
+      if (samples) {
+        const n = samples.length;
+        const span = (box.right - box.left) / ((n - 1) / fs);
+        const points = new Array(n);
+        for (let k = 0; k < n; k++) points[k] = [box.right - ((n - 1 - k) / fs) * span, mid - ((samples[k] - mean) / range) * (rowH * 0.46)];
+        const rowBox = { left: box.left, right: box.right, top: mid - rowH / 2, bottom: mid + rowH / 2 };
+        clip(ctx, rowBox, () => line(ctx, points, { color: C.data.periwinkle, width: 1 }));
+      }
+    });
+    ctx.fillStyle = C.ink.muted;
+    ctx.font = `${theme.chart['label-font-size']}px ${theme.font.ui}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('Last 4 seconds, newest on the right', (box.left + box.right) / 2, box.bottom + 10);
+    if (status) message(ctx, box, status);
+    if (simulated) simulatedWatermark(ctx, box);
+  });
+}
+
+/**
  * Spectrum on a frequency axis. kind 'psd' → dB re 1 unit²/Hz; 'magnitude' → linear.
  */
 export function drawSpectrum(chart, { values, fs = 500, n = 1024, maxHz = 45, kind = 'psd', unit, status, simulated, band = [8, 13] }) {

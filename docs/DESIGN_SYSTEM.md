@@ -43,7 +43,7 @@ An instrument page is tabs: Setup, Signal, Protocol, Results, plus Recordings in
 
 **Run panel.** Signal and Protocol share a panel at their side: current block, protocol launchers and markers. An operator about to start a protocol sees the signal and the launcher together. The panel is sticky, and stacks under the tab below 1100 px.
 
-**Example results.** Results can show an example before any run, so a visitor sees the charts and the reading before having a board. Figures are round, inspired by real data and smoothed. A dashed note names it, every chart carries an EXAMPLE mark, and the panel kicker reads “Example · not a recording”. An example never reaches a session, the store or an export, closes when a protocol starts, and is not offered next to results from hardware.
+**Example results.** Results can show an example before any run, so a visitor sees the charts and the reading before having a board. Figures are round, inspired by real data and smoothed. A dashed note names it, every chart carries an EXAMPLE mark, and the panel kicker reads “Example · not a recording”. Breathwork shows the example of the chosen format. An example never reaches a session, the store or an export, closes when a protocol starts, and is not offered next to results from hardware.
 
 ## Anatomical illustration
 

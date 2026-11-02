@@ -16,7 +16,7 @@ import { createTabs } from '../../src/ui/components/tabs.js';
 import { createProtocolGuide } from '../../src/ui/components/protocol-guide.js';
 import { createSegmented } from '../../src/ui/components/segmented.js';
 import { sessionTimelineSvg } from '../../src/ui/components/session-timeline.js';
-import { BREATHWORK_EXAMPLE, exampleButton, exampleView } from '../../src/ui/components/example-results.js';
+import { BREATHWORK_EXAMPLES, exampleButton, exampleView } from '../../src/ui/components/example-results.js';
 import { LabController } from '../../src/lab/controller.js';
 import { controlStates, protocolCard, statusItems, sharedReason } from '../../src/lab/viewmodel.js';
 import { BergerV3WindowEngine } from '../../src/analysis/berger-v3.js';
@@ -728,7 +728,7 @@ function renderResults() {
   const setExample = (on) => { showExample = on; renderResults(); };
   setText(resultsKicker, showExample ? 'Example · not a recording' : 'Descriptive · this session');
   if (showExample) {
-    resultsBody.replaceChildren(...exampleView(BREATHWORK_EXAMPLE, { onHide: () => setExample(false) }));
+    resultsBody.replaceChildren(...exampleView(BREATHWORK_EXAMPLES[ui.sessionFormat], { onHide: () => setExample(false), formatLabel: SESSION_FORMATS[ui.sessionFormat].label }));
     return;
   }
   const blocks = c.protocol.blocks;

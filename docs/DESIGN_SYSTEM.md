@@ -33,8 +33,9 @@ Thermodrift's brand is slightly Art Deco and slightly Parisian. That taste lives
 2. **Status by shape, not only colour**: check (ready), dot (live), triangle (warning), cross (error), dashed ring (stale), hatch (simulated), ring (idle).
 3. **Simulated is unmistakable**: hatched purple source chip in the header, `SIMULATED-` file names, watermark on every chart, and a plain note on a saved simulated session.
 4. **Dropdown arrows sit inside the control**: 16 px from the right border, in muted ink, with room reserved so text never runs under them.
-5. **Live numbers can hide during a protocol**, so the operator is not steered by them: on by default in Berger Effect, off by default in Breathwork.
-5. **Prompted labels** are named as prompts (“Pair 2 · eyes closed”), never as observed states.
+5. **A segmented control is for two to four short options that all fit in view**, on native radio buttons with a sand underline on the chosen one. A longer list stays a dropdown.
+6. **Live numbers can hide during a protocol**, so the operator is not steered by them: on by default in Berger Effect, off by default in Breathwork.
+7. **Prompted labels** are named as prompts (“Pair 2 · eyes closed”), never as observed states.
 
 ## Tabs
 

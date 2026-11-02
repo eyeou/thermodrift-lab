@@ -5,13 +5,15 @@
 import { appName, brand } from '../../src/ui/components/lab-mark.js';
 import { h, statusIcon, actionButton } from '../../src/ui/dom.js';
 import { createCanvas, drawTrace, drawSpectrum } from '../../src/ui/charts/canvas.js';
-import { pairsChart, reportCard, restChart, timeCourseChart } from '../../src/ui/charts/report.js';
+import { pairsChart, reportCard, restChart, svgHost, timeCourseChart } from '../../src/ui/charts/report.js';
 import { montageSvg, SITES_1020, REGION_LETTERS } from '../../src/ui/components/montage.js';
 import { theme } from '../../src/design/theme.js';
 import { placementSvg, placementViews, PLATE_NOTE } from '../../src/ui/components/placement.js';
 import { createTabs } from '../../src/ui/components/tabs.js';
+import { createSegmented } from '../../src/ui/components/segmented.js';
+import { sessionTimelineSvg } from '../../src/ui/components/session-timeline.js';
 import { MONTAGES } from '../berger/config.js';
-import { MONTAGES as BREATH_MONTAGES } from '../breathwork/config.js';
+import { MONTAGES as BREATH_MONTAGES, SESSION_FORMATS, sessionTimeline } from '../breathwork/config.js';
 
 const root = document.getElementById('app');
 const report = await fetch('../../src/design/contrast-report.json').then((r) => r.json()).catch(() => null);
@@ -143,6 +145,20 @@ const plateLeads = BREATH_MONTAGES['breath-6ch'].leads;
 main.append(panel('05b', 'Placement plates and tabs', 'one source for the apps, the README and the tests',
   createTabs({ label: 'Placement views', className: 'td-tabs--sub', tabs: placementViews(plateLeads).map((view) => ({ id: view, title: view[0].toUpperCase() + view.slice(1), panel: h('figure', { class: 'td-plate', style: 'max-width:520px', html: placementSvg(view, plateLeads) }) })) }).el,
   h('p', { class: 'td-caption', text: PLATE_NOTE })));
+
+// ---------------------------------------------------------------- segmented control
+const formatOptions = Object.values(SESSION_FORMATS).map(({ id, label }) => ({ value: id, label }));
+const lockedFormat = createSegmented({ label: 'Session format, fixed', options: formatOptions, value: 'wim-hof-style', onChange: () => {} });
+for (const input of lockedFormat.inputs) input.disabled = true;
+let shownFormat = 'wim-hof-style';
+const timelineSample = svgHost((width) => sessionTimelineSvg(sessionTimeline(shownFormat), SESSION_FORMATS[shownFormat].key, { width }), 860);
+const freeFormat = createSegmented({ label: 'Session format', options: formatOptions, value: shownFormat, onChange: (id) => { shownFormat = id; timelineSample.redraw(); } });
+main.append(panel('05c', 'Segmented control and session timeline', 'one choice among a few, all in view',
+  h('div', { class: 'ct-states' },
+    h('div', { class: 'td-field' }, h('span', { text: 'Segmented' }), freeFormat.el),
+    h('div', { class: 'td-field' }, h('span', { text: 'Disabled (locked setup)' }), lockedFormat.el)),
+  timelineSample.el,
+  h('p', { class: 'td-caption', text: 'The timeline shows planned lengths to scale, never a recording.' })));
 
 // ---------------------------------------------------------------- 06 motion and focus
 main.append(panel('06', 'Motion and focus', null,

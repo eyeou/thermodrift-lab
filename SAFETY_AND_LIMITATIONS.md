@@ -13,6 +13,7 @@ Thermodrift Lab is a research tool for self-run experiments. It is not a medical
 - The Breathwork app records a session. It cues its short signal check and supervises nothing.
 - Fast breathing can cause dizziness, tingling or fainting, and it delays the urge to breathe. Stay lying down, never in or near water, standing or driving. Give any hold a time limit, and stop for chest pain, faintness or anything unusual.
 - With a heart condition, epilepsy or a pregnancy, ask a doctor first.
+- Run the long format with a trained facilitator present.
 
 ## What the numbers are
 

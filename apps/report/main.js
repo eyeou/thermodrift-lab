@@ -149,6 +149,7 @@ function summarySection(results, channel) {
       metric('Samples', view.sample_count != null ? view.sample_count.toLocaleString('en-GB') : '—'),
       metric('Missing', view.health?.gaps ?? '—'),
       metric('Montage', montage?.summary ?? montage?.channelNames?.[0] ?? view.montage, true),
+      app.sessionFormatLabel ? metric('Session format', app.sessionFormatLabel(view.session_format), true) : null,
       metric('App', `${view.app} ${view.app_version}`, true),
       metric('Analysis plan', view.analysis_plan, true)),
     view.close_reason && view.status !== 'closed' ? h('p', { class: 'rp-note', dataset: { tone: 'warning' }, text: view.close_reason }) : null);
@@ -265,6 +266,7 @@ function setupSection() {
     montage ? h('div', { class: 'td-montage' }, montageSvg({ leads: montage.leads, compact: false })) : null,
     h('dl', { class: 'rp-dl' },
       h('dt', { text: 'Montage' }), h('dd', { text: montage?.label ?? view.montage }),
+      app.sessionFormatLabel ? h('dt', { text: 'Session format' }) : null, app.sessionFormatLabel ? h('dd', { text: app.sessionFormatLabel(view.session_format) }) : null,
       h('dt', { text: 'Leads' }), h('dd', { text: montage ? montage.leads.map((l) => `${l.pin} → ${l.siteLabel}`).join(' · ') : '—' }),
       h('dt', { text: 'Pads' }), h('dd', { text: s.pad_condition ?? '—' }),
       h('dt', { text: 'Checks' }), h('dd', { text: confirmations }),

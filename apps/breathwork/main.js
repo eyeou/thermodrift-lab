@@ -8,12 +8,14 @@
  *   (default)           NPG Lite over Web Bluetooth + spoken cues
  */
 import { appName, brand } from '../../src/ui/components/lab-mark.js';
-import { h, setText, statusIcon, actionButton } from '../../src/ui/dom.js';
+import { h, setText, statusIcon, actionButton, uid } from '../../src/ui/dom.js';
 import { createCanvas, drawTrace, drawSpectrum } from '../../src/ui/charts/canvas.js';
-import { restCard } from '../../src/ui/charts/report.js';
+import { restCard, svgHost } from '../../src/ui/charts/report.js';
 import { placementSvg, placementViews, PLATE_NOTE } from '../../src/ui/components/placement.js';
 import { createTabs } from '../../src/ui/components/tabs.js';
 import { createProtocolGuide } from '../../src/ui/components/protocol-guide.js';
+import { createSegmented } from '../../src/ui/components/segmented.js';
+import { sessionTimelineSvg } from '../../src/ui/components/session-timeline.js';
 import { BREATHWORK_EXAMPLE, exampleButton, exampleView } from '../../src/ui/components/example-results.js';
 import { LabController } from '../../src/lab/controller.js';
 import { controlStates, protocolCard, statusItems, sharedReason } from '../../src/lab/viewmodel.js';
@@ -26,10 +28,9 @@ import { createNpgBleTransport } from '../../src/transport/npg-ble.js';
 import { createSimulatedTransport } from '../../src/transport/simulated.js';
 import { createSpeechCues, createSilentCues } from '../../src/protocol/cues.js';
 import { createSessionLocks, recoverAbandonedSessions } from '../../src/lab/locks.js';
-import { BREATH_COMPLETION_CUES } from '../../src/protocol/breath-protocol.js';
 import { saveBundle } from '../../src/ui/save-bundle.js';
 import { bundleStem, latestRecording, lengthText, recordingSummaries } from '../../src/session/recordings.js';
-import { APP, MONTAGES, DEFAULT_MONTAGE, MAX_CHANNELS, EEG_CHANNEL, TRACE_RANGE, channelLabel, channelKind, blockName, protocolEntries, GUIDE, describeBreathworkSession, breathBlockSummary, restComparison } from './config.js';
+import { APP, MONTAGES, DEFAULT_MONTAGE, MAX_CHANNELS, EEG_CHANNEL, TRACE_RANGE, channelLabel, channelKind, blockName, protocolEntries, describeBreathworkSession, breathBlockSummary, restComparison, SESSION_FORMATS, DEFAULT_SESSION_FORMAT, guideFor, sessionTimeline, markerNote, completionCue } from './config.js';
 
 const simulated = new URLSearchParams(location.search).get('source') === 'simulated';
 const root = document.getElementById('app');
@@ -42,6 +43,7 @@ const localDate = (utc) => new Date(utc).toLocaleDateString('en-GB', { day: 'num
 // UI-only state. Session data live in the controller and the store.
 const ui = {
   montageId: DEFAULT_MONTAGE,
+  sessionFormat: DEFAULT_SESSION_FORMAT,
   liveChannel: 0,
   view: 'eeg',
   notch: '50h',
@@ -121,7 +123,8 @@ const controller = new LabController({
   channelLabel,
   locks,
   onProtocolEnded: (last, state) => {
-    if (BREATH_COMPLETION_CUES[last?.name] && state === 'completed' && cues.kind === 'speech') cues.speak(BREATH_COMPLETION_CUES[last.name], {});
+    const cue = completionCue(last?.name, ui.sessionFormat);
+    if (cue && state === 'completed' && cues.kind === 'speech') cues.speak(cue, {});
     resultsDirty = true;
   },
 });
@@ -237,12 +240,25 @@ const blockProgress = h('div', { class: 'td-progress' }, h('i'));
 const blockCard = h('div', { class: 'td-block-card', role: 'status', 'aria-live': 'polite' },
   h('span', { class: 'td-kicker', text: 'Current block' }), blockTitle, blockCountdown, blockProgress, blockInstruction, blockStep);
 const abortButton = actionButton({ onClick: () => controller.abortProtocol() });
-const markerNote = h('input', { type: 'text', placeholder: 'What happened? (optional)', 'aria-label': 'Marker note' });
+const markerInput = h('input', { type: 'text', placeholder: 'What happened? (optional)', 'aria-label': 'Marker note' });
 const markerButton = actionButton({ onClick: () => addMarker() });
 const markerList = h('ul', { class: 'bl-markers' });
-const MARKER_KEYS = Object.freeze({ b: 'breathing start', h: 'hold start', r: 'recovery breath', v: 'video start', m: 'marker' });
+const keysCaption = h('p', { class: 'td-caption' });
+const runFormat = h('span', { class: 'td-kicker' });
+const formatWhyId = uid('format-why');
+const formatWhy = h('p', { class: 'td-why', id: formatWhyId, hidden: true, text: 'Fixed for this session. Start a new session to change it.' });
+const formatPicker = createSegmented({ label: 'Session format', options: Object.values(SESSION_FORMATS).map((f) => ({ value: f.id, label: f.label })), value: ui.sessionFormat, onChange: (id) => chooseFormat(id), describedBy: formatWhyId });
+const formatSummary = h('p', { class: 'td-format-summary' });
+const formatTimeline = svgHost((width) => sessionTimelineSvg(sessionTimeline(ui.sessionFormat), SESSION_FORMATS[ui.sessionFormat].key, { width }), 860);
+const formatCare = h('p', { class: 'td-guide-limit', hidden: true });
+const formatBlock = h('div', { class: 'td-format' },
+  h('div', { class: 'td-field' }, h('span', { text: 'Session format' }), formatPicker.el, formatWhy),
+  formatSummary,
+  formatTimeline.el,
+  h('p', { class: 'td-caption', text: 'The planned order, to scale. Inside the session your guide sets the pace, so those lengths are approximate.' }),
+  formatCare);
 const tabLive = h('span', { class: 'td-tab-live', role: 'status' });
-const guideView = createProtocolGuide({ guide: GUIDE, blockName, goToTab: (id) => mainTabs.select(id) });
+const guideView = createProtocolGuide({ guide: guideFor(ui.sessionFormat), blockName, goToTab: (id) => mainTabs.select(id), intro: formatBlock });
 const protocolReason = h('p', { class: 'td-why', role: 'status', hidden: true });
 const protocolLauncher = h('div', { class: 'td-protocol-run' },
   h('div', { class: 'td-field' }, h('span', { text: 'Spoken cues' }), cueButton.el,
@@ -250,11 +266,11 @@ const protocolLauncher = h('div', { class: 'td-protocol-run' },
   protocolList);
 const protocolPanel = panel('03', 'Protocol', null, guideView.el);
 const runPanel = h('aside', { class: 'td-panel td-rail', 'aria-label': 'Run a protocol' },
-  h('header', {}, h('h2', { text: 'Run' })),
+  h('header', {}, h('h2', { text: 'Run' }), runFormat),
   h('div', { class: 'td-protocol-run' }, blockCard, abortButton.el, protocolLauncher,
-    h('div', { class: 'td-field' }, h('span', { text: 'Markers (movement, noise, phases of the video)' }),
-      h('div', { class: 'bl-marker-row' }, markerNote, markerButton.el),
-      h('p', { class: 'td-caption', text: 'Keys while acquiring: V video start · B breathing · H hold · R recovery breath · M marker.' }),
+    h('div', { class: 'td-field' }, h('span', { text: 'Markers (movement, noise, phases of the session)' }),
+      h('div', { class: 'bl-marker-row' }, markerInput, markerButton.el),
+      keysCaption,
       markerList)));
 
 // ---------------------------------------------------------------- 04 results
@@ -308,6 +324,7 @@ function pushSetup() {
     pad_condition: ui.setup.pad_condition,
     position: ui.setup.position,
     condition: ui.setup.condition,
+    session_format: ui.sessionFormat,
     placement_notes: ui.setup.placement_notes,
     hypothesis: ui.setup.hypothesis,
     operator_confirmations: { battery_only: ui.setup.battery_only, contact_intact_comfortable: ui.setup.contact, wiring_and_switches: ui.setup.routing },
@@ -332,6 +349,27 @@ function renderMontage() {
     chipRefs.push({ chip, value });
     return chip;
   }));
+}
+
+/** What the Protocol tab and the Run panel say for the chosen format. */
+function renderFormat() {
+  const format = SESSION_FORMATS[ui.sessionFormat];
+  setText(formatSummary, format.summary);
+  formatTimeline.redraw();
+  formatCare.hidden = !format.care;
+  formatCare.replaceChildren(...(format.care ? [h('strong', { text: 'Care. ' }), format.care] : []));
+  setText(runFormat, format.label);
+  setText(keysCaption, format.keys);
+  guideView.setGuide(guideFor(format.id));
+}
+
+function chooseFormat(id) {
+  if (controller.locked || id === ui.sessionFormat) return;
+  ui.sessionFormat = id;
+  pushSetup();
+  renderFormat();
+  resultsDirty = true;
+  render();
 }
 
 function selectChannel(ch) {
@@ -414,8 +452,8 @@ async function newSession() {
 }
 
 function addMarker() {
-  ui.markers.unshift(controller.mark(markerNote.value));
-  markerNote.value = '';
+  ui.markers.unshift(controller.mark(markerInput.value));
+  markerInput.value = '';
   render();
 }
 
@@ -428,7 +466,7 @@ document.addEventListener('keydown', (event) => {
   const t = event.target;
   const typing = t instanceof HTMLElement && (t.isContentEditable || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || (t.tagName === 'INPUT' && !['checkbox', 'radio', 'button'].includes(t.type)));
   if (typing) return;
-  const note = MARKER_KEYS[event.key.toLowerCase()];
+  const note = markerNote(ui.sessionFormat, event.key.toLowerCase());
   if (!note || controller.acquisition !== 'acquiring') return;
   event.preventDefault();
   ui.markers.unshift(controller.mark(`${note} (key)`));
@@ -491,8 +529,10 @@ function paint(forceCharts) {
     statusIcon(item.tone), h('span', { class: 'td-status-label', text: item.label }), h('span', { class: 'td-status-value', text: item.value }))));
 
   for (const el of setupFields) el.disabled = c.locked;
+  for (const el of formatPicker.inputs) el.disabled = c.locked;
   for (const el of displayControls) el.disabled = c.protocol.running;
   lockedNote.hidden = !c.locked;
+  formatWhy.hidden = !c.locked;
 
   // Protocol buttons are rebuilt only when their content changes, so focus survives renders.
   const signature = entries.map((e) => `${e.name}:${e.detail}`).join('|');
@@ -750,5 +790,6 @@ function renderResults() {
 
 // ---------------------------------------------------------------- start
 renderMontage();
+renderFormat();
 pushSetup();
 render({ charts: true });

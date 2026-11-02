@@ -7,7 +7,7 @@ Browser instruments for self-run biosignal experiments with an [Upside Down Labs
 | **Berger Effect** | Does closing the eyes raise 8–13 Hz power at the back of the head? The 1929 test, and a first check of the recording chain. | 1 EEG | [With a board](https://app.thermodrift.com/berger/) · [Simulator](https://app.thermodrift.com/berger/?source=simulated) |
 | **Breathwork** | What do heart, brain, eye and muscle signals do around a guided breathing session, and which of them can be read during it? | Up to 6: ECG, EEG, EOG, EMG | [With a board](https://app.thermodrift.com/breathwork/) · [Simulator](https://app.thermodrift.com/breathwork/?source=simulated) |
 
-Both have four tabs: **Setup** (where the electrodes go), **Signal** (live trace and spectrum), **Protocol** (the session step by step, and the timed runs) and **Results**. Breathwork adds **Recordings**: each recording with its own export and test flag. A **Run** panel stays beside Signal and Protocol, with the current block, the protocol launchers and markers. Results can show labelled example results before your first run.
+Both have four tabs: **Setup** (where the electrodes go), **Signal** (live trace and spectrum), **Protocol** (the session step by step, and the timed runs) and **Results**. Breathwork adds **Recordings**: each recording with its own export and test flag. Its Protocol tab offers two session formats, Wim Hof-style and Holotropic-style, and the export records the choice. A **Run** panel stays beside Signal and Protocol, with the current block, the protocol launchers and markers. Results can show labelled example results before your first run.
 
 ## Where the electrodes go
 

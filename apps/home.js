@@ -11,14 +11,14 @@ const APPS = [
   {
     index: '01',
     name: 'Berger Effect',
-    text: 'Eyes open, eyes closed: the 1929 alpha test, the classic check of a recording chain.',
-    links: [['Open with NPG Lite', 'berger/', 'td-btn td-btn--primary'], ['Try the simulator', 'berger/?source=simulated', 'td-btn'], ['See the protocol', 'berger/#protocol', 'td-btn']],
+    text: 'Eyes open, then eyes closed, the alpha test Hans Berger described in 1929.',
+    links: [['Open the app', 'berger/', 'td-btn td-btn--primary']],
   },
   {
     index: '02',
     name: 'Breathwork',
-    text: 'ECG, EEG, EOG and EMG around a guided breathing session: a signal check, then the same rest before and after.',
-    links: [['Open with NPG Lite', 'breathwork/', 'td-btn td-btn--primary'], ['Try the simulator', 'breathwork/?source=simulated', 'td-btn'], ['See the protocol', 'breathwork/#protocol', 'td-btn']],
+    text: 'ECG, EEG, EOG and EMG around a guided breathing session, with a signal check and the same rest before and after.',
+    links: [['Open the app', 'breathwork/', 'td-btn td-btn--primary']],
   },
   { index: '03', name: 'Session report', text: 'Reopen a saved session or an exported bundle: results, timeline, blocks, integrity.', links: [['Open reports', 'report/', 'td-btn']] },
   { index: '04', name: 'Design catalogue', text: 'Tokens, components, states and chart grammar shared by every instrument.', links: [['Open catalogue', 'catalog/', 'td-btn']] },

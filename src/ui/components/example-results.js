@@ -1,6 +1,6 @@
 /**
  * Example results for the Results tab: what a complete run can look like, before any recording.
- * Round figures inspired by real sessions, smoothed. They stay in this view: nothing here reaches a
+ * Round figures inspired by real experimental data. They stay in this view: nothing here reaches a
  * session, the browser store or an export, and every chart carries an EXAMPLE mark.
  */
 import { h } from '../dom.js';
@@ -16,7 +16,7 @@ const median = (values) => {
 };
 
 export const EXAMPLE_LABEL = 'Example results';
-export const EXAMPLE_NOTE = 'Not a recording. Inspired by real data, smoothed and rounded.';
+export const EXAMPLE_NOTE = 'Not a recording. Inspired from real experimental data.';
 
 // ---------------------------------------------------------------- data
 const PAIRS = [[1, 11, 64], [2, 10, 88], [3, 9.5, 92], [4, 9, 82]]

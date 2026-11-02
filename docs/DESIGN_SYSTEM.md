@@ -7,7 +7,8 @@ Source of truth: `src/design/tokens.json`. `npm run tokens` generates `tokens.cs
 - **Logo**: `brand/thermodrift-logo.png`, aspect 1172 : 227, never recoloured or stretched; 176 px wide in app headers.
 - **Lab mark**: the logo, a brass diamond, then LAB in drawn inline capitals (`src/ui/components/lab-mark.js`), with 24 px either side of the diamond. App headers read `Thermodrift ◆ LAB ◆ App name`.
 - **Brand red `#B61E20`**: fills and labels with white text, primary buttons. Never text or thin lines on navy (contrast 2.97).
-- **Rose `#E5606E`**: eyes-closed data and key numbers. **Periwinkle `#6F86F2`**: eyes-open data, traces and links. The website's charts use the same pair.
+- **Rose `#E5606E`**: eyes-closed data and key numbers. **Periwinkle `#6F86F2`**: eyes-open data, traces and links.
+- **Soft rose `#FA8B94`, soft periwinkle `#B6C2FF`**: the same two states in result charts, as on the website. Soft rose also carries the hero number. Live canvas charts keep the pair above.
 - Navy surfaces (`#070A22` base), square corners, 8 px rhythm, hard black shadows on titles.
 - Type: Georgia for titles and story, system sans for interface, tabular numerals for numbers, monospace for ids and hashes. No font files are bundled.
 
@@ -76,6 +77,8 @@ Placement plates are instructions first: the anatomy says where an electrode goe
 | Legends and the simulated label sit above the plot | Never over data |
 | 50 Hz multiples dashed on spectra | Mains is the first suspect |
 
+**Result charts** (`src/ui/charts/report.js`) use the report grammar: a card on the navy page, a Georgia heading that states the finding, one hero ratio with its definition, sans labels, a horizontal grid only, block shading at 7.5%, points joined by thin lines. Text keeps its size on a phone because a chart is drawn at the real width of its card. In a session the heading is computed from the results, so it never says more than they show; only an example may state its finding in words.
+
 ## Accessibility
 
-Contrast pairs are checked automatically (36 of 36 pass), including the data colours and brass where they are used as text. Focus ring `#F2F2F2`, 2 px offset. Charts carry an `aria-label` describing what they show; tables have scoped headers. Motion is decorative and stops under `prefers-reduced-motion`; live charts redraw at most four times a second.
+Contrast pairs are checked automatically (44 of 44 pass), including the data colours and brass where they are used as text. Focus ring `#F2F2F2`, 2 px offset. Charts carry an `aria-label` describing what they show; tables have scoped headers. Motion is decorative and stops under `prefers-reduced-motion`; live charts redraw at most four times a second.

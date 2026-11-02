@@ -34,6 +34,22 @@
       "pass": true
     },
     {
+      "name": "data-rose-soft on #070A22 (graphics)",
+      "fg": "#FA8B94",
+      "bg": "#070A22",
+      "ratio": 8.54,
+      "min": 3,
+      "pass": true
+    },
+    {
+      "name": "data-periwinkle-soft on #070A22 (graphics)",
+      "fg": "#B6C2FF",
+      "bg": "#070A22",
+      "ratio": 11.3,
+      "min": 3,
+      "pass": true
+    },
+    {
       "name": "data-sand on #070A22 (graphics)",
       "fg": "#E8C18D",
       "bg": "#070A22",
@@ -114,6 +130,22 @@
       "pass": true
     },
     {
+      "name": "data-rose-soft on #070A22 (text)",
+      "fg": "#FA8B94",
+      "bg": "#070A22",
+      "ratio": 8.54,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "name": "data-periwinkle-soft on #070A22 (text)",
+      "fg": "#B6C2FF",
+      "bg": "#070A22",
+      "ratio": 11.3,
+      "min": 4.5,
+      "pass": true
+    },
+    {
       "name": "brand-brass on #070A22 (text)",
       "fg": "#C9A86A",
       "bg": "#070A22",
@@ -150,6 +182,22 @@
       "fg": "#6F86F2",
       "bg": "#0B0F28",
       "ratio": 5.72,
+      "min": 3,
+      "pass": true
+    },
+    {
+      "name": "data-rose-soft on #0B0F28 (graphics)",
+      "fg": "#FA8B94",
+      "bg": "#0B0F28",
+      "ratio": 8.25,
+      "min": 3,
+      "pass": true
+    },
+    {
+      "name": "data-periwinkle-soft on #0B0F28 (graphics)",
+      "fg": "#B6C2FF",
+      "bg": "#0B0F28",
+      "ratio": 10.91,
       "min": 3,
       "pass": true
     },
@@ -230,6 +278,22 @@
       "fg": "#6F86F2",
       "bg": "#0B0F28",
       "ratio": 5.72,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "name": "data-rose-soft on #0B0F28 (text)",
+      "fg": "#FA8B94",
+      "bg": "#0B0F28",
+      "ratio": 8.25,
+      "min": 4.5,
+      "pass": true
+    },
+    {
+      "name": "data-periwinkle-soft on #0B0F28 (text)",
+      "fg": "#B6C2FF",
+      "bg": "#0B0F28",
+      "ratio": 10.91,
       "min": 4.5,
       "pass": true
     },

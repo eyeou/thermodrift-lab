@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+### Shared
+- Result charts follow the report grammar in Berger Effect, Breathwork, the session report and the example results: a card on the navy page, a Georgia heading, a hero ratio, sans labels and a horizontal grid only. In a session the heading is computed from the results. No computed value changes.
+- Result charts are drawn at the width of their card, so labels keep their size on a phone.
+- Design tokens: `data.rose-soft` and `data.periwinkle-soft`, the two eye states in result charts.
+
+### Berger Effect
+- Results show alpha window by window above the pairs, as the session report does.
+
+### Breathwork
+- Results and the session report show the rest before and the rest after as a chart.
+
 ## 0.2.0 — 2026-11-02
 
 ### Breathwork 0.2.0 (new, `/breathwork/`)

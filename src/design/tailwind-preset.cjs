@@ -23,6 +23,8 @@ module.exports = {
           "ink-inverse": "var(--td-color-ink-inverse)",
           "data-rose": "var(--td-color-data-rose)",
           "data-periwinkle": "var(--td-color-data-periwinkle)",
+          "data-rose-soft": "var(--td-color-data-rose-soft)",
+          "data-periwinkle-soft": "var(--td-color-data-periwinkle-soft)",
           "data-sand": "var(--td-color-data-sand)",
           "data-neutral": "var(--td-color-data-neutral)",
           "data-band-fill": "var(--td-color-data-band-fill)",

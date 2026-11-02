@@ -28,6 +28,8 @@ export const theme = Object.freeze({
     "data": {
       "rose": "#E5606E",
       "periwinkle": "#6F86F2",
+      "rose-soft": "#FA8B94",
+      "periwinkle-soft": "#B6C2FF",
       "sand": "#E8C18D",
       "neutral": "#8A8FA8",
       "band-fill": "rgba(111, 134, 242, 0.14)"

@@ -10,6 +10,7 @@
 import { appName, brand } from '../../src/ui/components/lab-mark.js';
 import { h, setText, statusIcon, actionButton } from '../../src/ui/dom.js';
 import { createCanvas, drawTrace, drawSpectrum } from '../../src/ui/charts/canvas.js';
+import { restCard } from '../../src/ui/charts/report.js';
 import { placementSvg, placementViews, PLATE_NOTE } from '../../src/ui/components/placement.js';
 import { createTabs } from '../../src/ui/components/tabs.js';
 import { createProtocolGuide } from '../../src/ui/components/protocol-guide.js';
@@ -259,7 +260,7 @@ const runPanel = h('aside', { class: 'td-panel td-rail', 'aria-label': 'Run a pr
 // ---------------------------------------------------------------- 04 results
 const resultsBody = h('div', { class: 'td-body' });
 const resultsKicker = h('span', { class: 'td-kicker' });
-const resultsPanel = h('section', { class: 'td-panel', 'aria-label': 'Results' },
+const resultsPanel = h('section', { class: 'td-panel td-panel--open', 'aria-label': 'Results' },
   h('header', {}, h('h2', {}, h('span', { class: 'td-index', text: '04' }), 'Results'), resultsKicker),
   resultsBody);
 let resultsDirty = true;
@@ -718,20 +719,12 @@ function renderResults() {
       h('td', { class: 'td-num', text: pct(s.slow_share_secondary) }),
       h('td', {}, adherenceSelect(b)));
   });
-  const nodes = [
-    h('h3', { text: `Blocks · EEG channel ${eegName}` }),
-    h('div', { class: 'td-scroll-x' }, h('table', { class: 'td-table' },
-      h('caption', { class: 'td-visually-hidden', text: `Per-block summary of channel ${eegName}` }),
-      h('thead', {}, h('tr', {}, ...['Protocol', 'Block', 'Length', 'Clean windows', 'α power', 'α share', 'Slow share', 'Followed'].map((t) => h('th', { scope: 'col', text: t })))),
-      h('tbody', {}, ...rows))),
-    h('p', { class: 'td-caption', text: 'α power: median 8–13 Hz power after the fixed filter, count-equivalent². Shares: fraction of raw 0.5–45 Hz power in alpha (8–13 Hz) and in delta + theta (0.5–8 Hz).' }),
-  ];
-
+  const nodes = [];
   const cmp = restComparison({ blocks, windows: c.windows, channel: EEG_CHANNEL, adherenceOf: (b) => c.adherenceOf(b) });
   if (cmp.rows.some((r) => r.before && r.after)) {
     const arrow = (a, b) => `${pct(a)} → ${pct(b)}`;
-    nodes.push(h('h3', { text: 'Rest before → rest after' }));
-    nodes.push(h('div', { class: 'td-scroll-x' }, h('table', { class: 'td-table' },
+    nodes.push(restCard(cmp, { mark: simulated ? 'simulated' : null, channelName: eegName }));
+    nodes.push(h('div', { class: 'td-report-block' }, h('h3', { text: 'Rest before → rest after' }), h('div', { class: 'td-scroll-x' }, h('table', { class: 'td-table' },
       h('caption', { class: 'td-visually-hidden', text: 'Rest before versus rest after, per eye state' }),
       h('thead', {}, h('tr', {}, ...['Eyes', 'α before', 'α after', 'After / before', 'α share', 'Slow share', 'Clean windows B / A'].map((t) => h('th', { scope: 'col', text: t })))),
       h('tbody', {}, ...cmp.rows.map((r) => h('tr', {},
@@ -741,12 +734,15 @@ function renderResults() {
         h('td', { class: 'td-num', text: r.status === 'eligible' ? `${r.alpha_ratio_after_before.toFixed(2)}×` : r.status.replaceAll('_', ' ') }),
         h('td', { class: 'td-num', text: arrow(r.before?.relative_alpha_secondary, r.after?.relative_alpha_secondary) }),
         h('td', { class: 'td-num', text: arrow(r.before?.slow_share_secondary, r.after?.slow_share_secondary) }),
-        h('td', { class: 'td-num', text: `${r.before?.valid ?? 0} / ${r.after?.valid ?? 0}` })))))));
-    const closed = cmp.rows.find((r) => r.state === 'closed');
-    nodes.push(h('p', { class: 'bl-results-reading' }, closed?.status === 'eligible'
-      ? ['Eyes closed: alpha power after / before ', h('strong', { text: `${closed.alpha_ratio_after_before.toFixed(2)}×` }), ` · alpha share ${arrow(closed.before.relative_alpha_secondary, closed.after.relative_alpha_secondary)} · slow share ${arrow(closed.before.slow_share_secondary, closed.after.slow_share_secondary)}. Power depends on contact and gain.`]
-      : 'A row gets a ratio once both rests are complete, not excluded, with at least 2 clean windows each.'));
+        h('td', { class: 'td-num', text: `${r.before?.valid ?? 0} / ${r.after?.valid ?? 0}` }))))))));
   }
+  nodes.push(h('div', { class: 'td-report-block' },
+    h('h3', { text: `Blocks · EEG channel ${eegName}` }),
+    h('div', { class: 'td-scroll-x' }, h('table', { class: 'td-table' },
+      h('caption', { class: 'td-visually-hidden', text: `Per-block summary of channel ${eegName}` }),
+      h('thead', {}, h('tr', {}, ...['Protocol', 'Block', 'Length', 'Clean windows', 'α power', 'α share', 'Slow share', 'Followed'].map((t) => h('th', { scope: 'col', text: t })))),
+      h('tbody', {}, ...rows))),
+    h('p', { class: 'td-caption', text: 'α power: median 8–13 Hz power after the fixed filter, count-equivalent². Shares: fraction of raw 0.5–45 Hz power in alpha (8–13 Hz) and in delta + theta (0.5–8 Hz).' })));
   if (simulated && !c.protocol.running) nodes.push(exampleButton(() => setExample(true)));
   resultsBody.replaceChildren(...nodes);
   if (focused) resultsBody.querySelector(`select[data-block="${focused}"]`)?.focus();

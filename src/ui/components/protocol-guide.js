@@ -27,7 +27,7 @@ function blockTable(definition, blockName) {
 
 /**
  * @param {{guide:object, blockName:(label:string)=>string, goToTab:(id:string)=>void, intro?:Node|null}} options
- * guide: { question, needs[], time, steps[{title, text, tab?, protocol?}], protocols{name: {purpose, note?}}, limits, care? }
+ * guide: { question, needs[], steps[{title, text, tab?, protocol?}], protocols{name: {purpose, note?}}, care? }
  * intro: shown under the question of the whole session. The node stays in place when the guide changes.
  */
 export function createProtocolGuide({ guide: initial, blockName, goToTab, intro = null }) {
@@ -46,14 +46,11 @@ export function createProtocolGuide({ guide: initial, blockName, goToTab, intro 
   const written = h('div', { class: 'td-guide-body' });
   const whole = h('div', { class: 'td-guide-body' }, h('p', { class: 'td-guide-question', text: guide.question }), intro, written);
   const paintWritten = () => written.replaceChildren(
-    h('div', { class: 'td-guide-facts' },
-      h('div', {}, h('span', { class: 'td-kicker', text: 'You need' }), h('ul', {}, ...guide.needs.map((n) => h('li', { text: n })))),
-      h('div', {}, h('span', { class: 'td-kicker', text: 'Time' }), h('p', { text: guide.time }))),
+    h('details', { class: 'td-guide-needs' }, h('summary', { text: 'What you need' }), h('ul', {}, ...guide.needs.map((n) => h('li', { text: n })))),
     h('ol', { class: 'td-steps' }, ...guide.steps.map((step, i) => h('li', { class: 'td-step' },
       h('span', { class: 'td-step-n', 'aria-hidden': 'true', text: ROMAN[i] ?? String(i + 1) }),
       h('div', {}, h('strong', { text: step.title }), h('p', { text: step.text }), stepLink(step))))),
-    ...(guide.care ? [h('p', { class: 'td-guide-limit' }, h('strong', { text: 'Care. ' }), guide.care)] : []),
-    h('p', { class: 'td-guide-limit' }, h('strong', { text: 'Limits. ' }), guide.limits));
+    ...(guide.care ? [h('p', { class: 'td-guide-limit' }, h('strong', { text: 'Care. ' }), guide.care)] : []));
   paintWritten();
 
   const one = (entry) => {

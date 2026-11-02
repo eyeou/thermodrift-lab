@@ -9,7 +9,7 @@
  */
 import { appName, brand } from '../../src/ui/components/lab-mark.js';
 import { h, setText, statusIcon, actionButton, uid } from '../../src/ui/dom.js';
-import { createCanvas, drawTrace, drawSpectrum } from '../../src/ui/charts/canvas.js';
+import { createCanvas, drawStack, drawTrace, drawSpectrum } from '../../src/ui/charts/canvas.js';
 import { restCard, svgHost } from '../../src/ui/charts/report.js';
 import { placementSvg, placementViews } from '../../src/ui/components/placement.js';
 import { createTabs } from '../../src/ui/components/tabs.js';
@@ -45,6 +45,7 @@ const ui = {
   montageId: DEFAULT_MONTAGE,
   sessionFormat: DEFAULT_SESSION_FORMAT,
   liveChannel: 0,
+  signalLayout: 'one',
   view: 'eeg',
   notch: '50h',
   spectrumMax: 45,
@@ -200,7 +201,6 @@ const setupPanel = panel('01', 'Setup', null,
       lockedNote)));
 
 // ---------------------------------------------------------------- 02 signal
-const channelSelect = h('select');
 const channelChips = h('div', { class: 'bw-chips', role: 'group', 'aria-label': 'Raw quality per channel' });
 const viewSelect = select([['eeg', 'Filtered · 0.5–45 Hz'], ['chords', 'Reference · 0.1–90 Hz'], ['raw', 'Raw + Welch PSD']], ui.view);
 const notchSelect = select([['50h', '50 Hz + harmonics'], ['50', '50 Hz only'], ['off', 'Off']], ui.notch);
@@ -214,19 +214,32 @@ const bandBars = h('div', { class: 'td-band-bars', 'aria-label': 'Band shares' }
 const bandCaption = h('p', { class: 'td-caption' });
 const metricsLine = h('p', { class: 'bl-metrics-line' });
 const flagsLine = h('p', { class: 'bl-flags', role: 'status' });
-const displayControls = [channelSelect, viewSelect, notchSelect];
+const displayControls = [viewSelect, notchSelect];
+const viewControls = h('div', { class: 'bl-view-controls' }, field('View', viewSelect), field('Notch', notchSelect), field('Spectrum', spectrumSelect), field('Trace scale', rangeSelect));
+const onePair = h('div', { class: 'td-chart-pair' },
+  h('div', { class: 'td-chart' }, traceHead, traceHost, traceFoot),
+  h('div', { class: 'td-chart' }, spectrumHead, spectrumHost, spectrumFoot));
+const stackHost = h('div');
+const stackFoot = h('p', { class: 'td-chart-foot', text: 'Raw ADC counts with the mean removed, each row on its own scale. Display only: recording does not change.' });
+const allPanel = h('div', { class: 'td-chart', hidden: true }, stackHost, stackFoot);
+const layoutControl = createSegmented({
+  label: 'How many channels to show',
+  options: [{ value: 'one', label: 'One channel' }, { value: 'all', label: 'All channels' }],
+  value: ui.signalLayout,
+  onChange: (value) => setSignalLayout(value),
+});
 const signalPanel = panel('02', 'Signal', 'Display only',
-  field('Live channel', channelSelect),
+  layoutControl.el,
   channelChips,
-  h('div', { class: 'bl-view-controls' }, field('View', viewSelect), field('Notch', notchSelect), field('Spectrum', spectrumSelect), field('Trace scale', rangeSelect)),
+  viewControls,
   flagsLine,
-  h('div', { class: 'td-chart-pair' },
-    h('div', { class: 'td-chart' }, traceHead, traceHost, traceFoot),
-    h('div', { class: 'td-chart' }, spectrumHead, spectrumHost, spectrumFoot)),
+  onePair,
+  allPanel,
   bandCaption, bandBars, metricsLine,
   h('label', { class: 'td-check' }, hideCheck, h('span', { text: 'Hide signal and numbers during protocols' })));
 const traceChart = createCanvas(traceHost, { height: 170, label: 'Live channel trace' });
 const spectrumChart = createCanvas(spectrumHost, { height: 210, label: 'Live channel spectrum' });
+const stackChart = createCanvas(stackHost, { height: 430, label: 'All channels' });
 
 // ---------------------------------------------------------------- 03 protocol
 const cueButton = actionButton({ onClick: () => controller.testCue() });
@@ -341,11 +354,10 @@ function renderMontage() {
   setText(montageNotes, m.notes);
   setText(routingText, `Wiring checked: ${m.routingCheck}`);
   if (ui.liveChannel >= m.requiredChannels) ui.liveChannel = 0;
-  channelSelect.replaceChildren(...m.channelNames.map((name, ch) => h('option', { value: ch, text: `${ch + 1} · ${name}`, selected: ch === ui.liveChannel })));
   chipRefs.length = 0;
   channelChips.replaceChildren(...m.channelNames.map((name, ch) => {
     const value = h('span', { class: 'bw-chip-value', text: '—' });
-    const chip = h('button', { type: 'button', class: 'bw-chip', title: name, 'aria-pressed': String(ch === ui.liveChannel), onclick: () => selectChannel(ch) }, h('strong', { text: `${ch + 1} · ${channelKind(m, ch).toUpperCase()}` }), value);
+    const chip = h('button', { type: 'button', class: 'bw-chip', title: name, 'aria-pressed': String(ch === ui.liveChannel), onclick: () => { selectChannel(ch); setSignalLayout('one'); } }, h('strong', { text: `${ch + 1} · ${channelKind(m, ch).toUpperCase()}` }), value);
     chipRefs.push({ chip, value });
     return chip;
   }));
@@ -372,10 +384,22 @@ function chooseFormat(id) {
   render();
 }
 
+/** One channel with its spectrum, or every channel stacked. Display only. */
+function setSignalLayout(layout) {
+  ui.signalLayout = layout;
+  layoutControl.inputs.forEach((input) => { input.checked = input.value === layout; });
+  const all = layout === 'all';
+  allPanel.hidden = !all;
+  onePair.hidden = all;
+  viewControls.hidden = all;
+  bandCaption.hidden = bandBars.hidden = all;
+  metricsLine.hidden = all;
+  paintSignal();
+}
+
 function selectChannel(ch) {
   if (controller.protocol.running || ch === ui.liveChannel) return;
   ui.liveChannel = ch;
-  channelSelect.value = String(ch);
   const kind = channelKind(currentMontage(), ch);
   ui.traceRange = TRACE_RANGE[kind] ?? 50;
   ui.view = kind === 'emg' ? 'raw' : ui.view === 'raw' ? 'eeg' : ui.view;
@@ -403,7 +427,6 @@ function changeDisplay() {
   }
   render({ charts: true });
 }
-channelSelect.onchange = () => selectChannel(Number(channelSelect.value));
 viewSelect.onchange = () => { ui.view = viewSelect.value; ui.spectrumMax = ui.view === 'raw' ? 250 : 45; spectrumSelect.value = String(ui.spectrumMax); changeDisplay(); };
 notchSelect.onchange = () => { ui.notch = notchSelect.value; changeDisplay(); };
 spectrumSelect.onchange = () => { ui.spectrumMax = Number(spectrumSelect.value); render({ charts: true }); };
@@ -665,15 +688,32 @@ function paintSignal() {
     : !c.fresh ? 'Stale: no data for 2 s'
     : null;
   const raw = ui.view === 'raw', chords = ui.view === 'chords';
+  const stacked = ui.signalLayout === 'all';
+  const linkProblem = shortOfChannels ? { tone: 'error', text: `The device sends ${deviceChannels} channels; this montage needs ${m.requiredChannels}. Attach VibZ+ before switching the NPG on (it should appear as NPG-Lite-6CH), or start a new session with a three-channel montage.` }
+    : acquiring && !c.fresh ? { tone: 'warning', text: 'No packets for 2 s. Check the link.' }
+    : null;
 
   chipRefs.forEach(({ chip, value }, i) => {
     const s = shortOfChannels && i >= deviceChannels ? { tone: 'error', text: 'not sent by the device' } : chipState(metrics[i], acquiring, c.fresh, channelKind(m, i));
     chip.dataset.tone = s.tone;
     chip.title = [channelLabel(m, i), s.detail].filter(Boolean).join(' · ');
-    chip.setAttribute('aria-pressed', String(i === ch));
+    chip.setAttribute('aria-pressed', String(!stacked && i === ch));
     chip.disabled = c.protocol.running;
     setText(value, s.text);
   });
+
+  if (stacked) {
+    const rows = m.channelNames.map((name, i) => ({
+      name: `${i + 1} · ${channelKind(m, i).toUpperCase()}`,
+      detail: name.split(' · ').slice(1).join(' · '),
+      samples: d?.raw?.(i) ?? null,
+      floor: TRACE_RANGE[channelKind(m, i)] ?? 50,
+    }));
+    drawStack(stackChart, { rows, status, simulated });
+    flagsLine.dataset.tone = linkProblem?.tone ?? 'idle';
+    setText(flagsLine, linkProblem?.text ?? (acquiring ? 'Each box above shows the raw quality of its channel.' : 'Not acquiring.'));
+    return;
+  }
 
   const rawRing = d?.raw?.(ch);
   const traceSamples = raw ? rawRing : chords ? proc?.samples : proc?.samples?.map((v) => v * 2048);
@@ -709,8 +749,7 @@ function paintSignal() {
     : `RMS ${fmt(latest.rms, 1)} counts · range ${fmt(latest.range, 0)} counts · ${quality}`);
 
   let tone = 'idle', text = acquiring ? 'Waiting for 4.1 s of continuous samples.' : 'Not acquiring.';
-  if (shortOfChannels) { tone = 'error'; text = `The device sends ${deviceChannels} channels; this montage needs ${m.requiredChannels}. Attach VibZ+ before switching the NPG on (it should appear as NPG-Lite-6CH), or start a new session with a three-channel montage.`; }
-  else if (acquiring && !c.fresh) { tone = 'warning'; text = 'No packets for 2 s. Check the link.'; }
+  if (linkProblem) { tone = linkProblem.tone; text = linkProblem.text; }
   else if (acquiring && latest) {
     if (latest.reasons.length) { tone = 'error'; text = `Channel ${ch + 1}: ${latest.reasons.join(', ')} in the raw signal. Filtering cannot repair it: check contacts.`; }
     else {

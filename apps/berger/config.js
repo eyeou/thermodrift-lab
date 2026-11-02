@@ -86,24 +86,22 @@ export function demoProtocol() {
 
 /** The written protocol shown in the Protocol tab. Block tables come from the definitions above. */
 export const GUIDE = Object.freeze({
-  question: 'Does closing the eyes raise 8–13 Hz power at the back of the head? A rise in at least three of four eligible pairs is consistent with a working chain.',
-  needs: ['NPG Lite on battery', 'Three electrodes: pregelled pads, or gold cups with paste', 'A measuring tape', 'Desktop Chrome or Edge'],
-  time: 'About 20 minutes with setup, 9 min 20 s of it for the test.',
+  question: 'Does closing the eyes raise 8–13 Hz power at the back of the head? At least three of four eligible pairs must rise.',
+  needs: ['NPG Lite on battery', 'Three electrodes, either pregelled pads or gold cups with paste', 'A measuring tape', 'Desktop Chrome or Edge'],
   steps: [
-    { title: 'Place the electrodes', text: 'A0P at Oz, A0N behind the left ear, REF behind the right ear. Measure nasion to inion: Oz sits 10% up from the inion. Use intact skin and part the hair so the electrode touches the scalp.', tab: 'setup', tabLabel: 'Open the figures' },
+    { title: 'Place the electrodes', text: 'A0P at Oz, A0N behind the left ear, REF behind the right ear. Measure from nasion to inion, and Oz sits 10% up from the inion. Use intact skin and part the hair so the electrode touches the scalp.', tab: 'setup', tabLabel: 'Open the figures' },
     { title: 'Remove the mains', text: 'Board and laptop on battery, nothing mains-powered touching the setup. Keep the laptop about a metre away and the cables still.' },
-    { title: 'Connect and look', text: 'Connect, start acquisition, wait for a trace. Clench your jaw once: you should see it. Fix anything that clips or stays flat.', tab: 'signal', tabLabel: 'Open the signal' },
+    { title: 'Connect and look', text: 'Connect, start acquisition, wait for a trace. Clench your jaw once and you should see it. Fix anything that clips or stays flat.', tab: 'signal', tabLabel: 'Open the signal' },
     { title: 'Baseline, then controls', text: 'A relaxed minute, then deliberate blinks and jaw contractions, so you know what those look like in your own setup.', protocol: 'artifact' },
-    { title: 'The long Berger test', text: 'Test the spoken cue, then follow it: four pairs of eyes open and closed, in a balanced, shuffled order. Stay still, and keep your eyes relaxed when they are closed.', protocol: 'berger' },
+    { title: 'The long Berger test', text: 'Test the spoken cue, then follow it through four pairs of eyes open and closed, in a balanced, shuffled order. Stay still, and keep your eyes relaxed when they are closed.', protocol: 'berger' },
     { title: 'Read and export', text: 'Results give closed over open alpha power for each pair. Mark any block you did not follow, then export the bundle. Recordings stay in this browser until exported.', tab: 'results', tabLabel: 'Open the results' },
   ],
   protocols: {
     baseline: { purpose: 'A quality check before anything else: one still minute with the eyes open.' },
     artifact: { purpose: 'Blinks and jaw contractions on purpose, so these artefacts are recognisable later.' },
-    berger: { purpose: 'Four pairs of eyes open and closed. The ratio within each pair is the result.', note: 'Pair order is shuffled at each start: this is one possible order. Block length is set in the Run panel.' },
+    berger: { purpose: 'Four pairs of eyes open and closed. The ratio within each pair is the result.', note: 'Pair order is shuffled at each start, and this is one possible order. Block length is set in the Run panel.' },
     'berger-demo': { purpose: 'The same labels with short blocks, for trying the interface. Not an experiment.' },
   },
-  limits: 'One session, one person, descriptive. Raw ADC counts, because the gain is not calibrated. Eye states are prompted, not measured.',
 });
 
 export function formatDuration(s) {

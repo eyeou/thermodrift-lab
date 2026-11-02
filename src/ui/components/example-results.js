@@ -182,7 +182,7 @@ export function spectrumSvg({ width: W = 520 } = {}) {
   const narrow = isNarrow(W), size = sizeFor(W);
   const lg = legend([{ label: 'Eyes open', kind: 'line', color: EYES_OPEN }, { label: 'Eyes closed', kind: 'line', color: EYES_CLOSED }], { W, mark: 'example', size });
   const titleY = lg.bottom + size + 12;
-  const box = { left: narrow ? 14 : 18, right: W - (narrow ? 4 : 8), top: titleY + 12, bottom: titleY + 12 + (narrow ? 210 : 240) };
+  const box = { left: narrow ? 14 : 18, right: W - (narrow ? 10 : 8), top: titleY + 12, bottom: titleY + 12 + (narrow ? 210 : 240) };
   const H = box.bottom + 48;
   const fMax = 40, top = 20;
   const x = (f) => box.left + (f / fMax) * (box.right - box.left);
@@ -299,7 +299,7 @@ export function longSessionSvg(example, { width: W = 1040 } = {}) {
   }
   body += xLabels([0, 10, 20, 30, 40, 50, 60, 70], x, stackBottom + size + 6, String, size);
   const H = stackBottom + 48;
-  body += text((plot.left + plot.right) / 2, H - 6, 'Minutes from the start of the rest before', { size, anchor: 'middle', fill: INK });
+  body += text(W / 2, H - 6, W < 300 ? 'Minutes from the start' : 'Minutes from the start of the rest before', { size, anchor: 'middle', fill: INK });
   return svgChart({ W, H, mark: 'example', body, label: `A session of ${total} minutes on one time axis. Breathing depth × rate rises about fourfold and heart rate climbs. Theta at Oz stays flat for the first minutes, climbs to about ${thetaLabel} times the rest before and stays up until the recovery, while alpha falls to about ${alphaLabel} times.` });
 }
 

@@ -6,9 +6,6 @@
 import { theme } from '../../design/theme.js';
 
 const C = theme.color;
-/** A theme colour at a given opacity (#RRGGBBAA). */
-const tint = (hex, alpha) => `${hex}${Math.round(alpha * 255).toString(16).padStart(2, '0')}`;
-
 /** Responsive, DPR-correct canvas inside `container`. */
 export function createCanvas(container, { height = 200, label = 'chart' } = {}) {
   const canvas = document.createElement('canvas');
@@ -221,106 +218,6 @@ export function drawSpectrum(chart, { values, fs = 500, n = 1024, maxHz = 45, ki
     ctx.fillText(`α ${band[0]}–${band[1]}`, (f.x(band[0]) + f.x(band[1])) / 2, f.box.top + 4);
     if (status || !ys.length) return message(ctx, f.box, status ?? 'Waiting for 4.1 s of contiguous samples');
     clip(ctx, f.box, () => line(ctx, ys.map((v, k) => [f.x((k * fs) / n), f.y(v)]), { color: C.data.rose }));
-    if (simulated) simulatedWatermark(ctx, f.box);
-  });
-}
-
-/**
- * Paired comparison: open vs closed per pair on one shared axis (counts²), ratio labels.
- * @param {{pair:number, open:number|null, closed:number|null, status:string, ratio:number|null}[]} pairs
- */
-export function drawPairs(chart, { pairs, unit = 'α power (count-equiv.²)', simulated }) {
-  chart.draw((ctx, w, h) => {
-    const values = pairs.flatMap((p) => [p.open, p.closed]).filter(Number.isFinite);
-    const max = values.length ? Math.max(...values) * 1.22 : 1;
-    const f = frame(ctx, w, h, {
-      x: { min: 0.4, max: pairs.length + 0.6, ticks: pairs.map((p) => p.pair), format: (v) => `Pair ${v}`, label: 'Prompted pairs (each: eyes open | eyes closed)' },
-      y: { min: 0, max, label: unit, format: compact },
-      padding: { left: 64, top: 30 },
-    });
-    legend(ctx, f.box, [['Eyes open', C.data.periwinkle], ['Eyes closed', C.data.rose], ['Not eligible', C.data.neutral]]);
-    if (!values.length) return message(ctx, f.box, 'No complete pairs yet');
-    const bw = Math.min(42, (f.x(1.4) - f.x(1)) * 0.9);
-    for (const p of pairs) {
-      const cx = f.x(p.pair);
-      const bars = [[p.open, C.data.periwinkle, -1], [p.closed, C.data.rose, 1]];
-      for (const [v, color, side] of bars) {
-        if (!Number.isFinite(v)) continue;
-        const x0 = side < 0 ? cx - bw - 2 : cx + 2;
-        ctx.fillStyle = p.status === 'eligible' ? color : C.data.neutral;
-        ctx.fillRect(x0, f.y(v), bw, f.box.bottom - f.y(v));
-        if (p.status !== 'eligible') {
-          clip(ctx, { left: x0, right: x0 + bw, top: f.y(v), bottom: f.box.bottom }, () => {
-            ctx.strokeStyle = C.surface.base;
-            for (let k = -bw; k < f.box.bottom - f.y(v); k += 6) { ctx.beginPath(); ctx.moveTo(x0, f.y(v) + k + bw); ctx.lineTo(x0 + bw, f.y(v) + k); ctx.stroke(); }
-          });
-        }
-      }
-      ctx.fillStyle = p.status === 'eligible' ? C.ink.primary : C.ink.muted;
-      ctx.font = `600 13px ${theme.font.numeric}`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
-      const top = Math.max(...[p.open, p.closed].filter(Number.isFinite).map((v) => f.y(v)), f.box.top + 16);
-      ctx.fillText(p.status === 'eligible' ? `${p.ratio.toFixed(2)}×` : p.status.replace('_', ' '), cx, Math.min(...[p.open, p.closed].filter(Number.isFinite).map((v) => f.y(v))) - 4 || top);
-    }
-    if (simulated) simulatedWatermark(ctx, f.box);
-  });
-}
-
-/** Legend in the top padding, left-aligned with the plot box (never over data). */
-export function legend(ctx, box, items) {
-  ctx.font = `12px ${theme.font.ui}`;
-  ctx.textBaseline = 'middle';
-  ctx.textAlign = 'left';
-  const y = box.top - 14;
-  let x = box.left;
-  for (const [label, color] of items) {
-    ctx.fillStyle = color;
-    ctx.fillRect(x, y - 5, 10, 10);
-    ctx.fillStyle = C.ink.primary;
-    ctx.fillText(label, x + 14, y);
-    x += ctx.measureText(label).width + 30;
-  }
-}
-
-/**
- * Session timeline: accepted-window alpha over protocol time, blocks shaded, markers drawn.
- */
-export function drawTimeline(chart, { windows, blocks, markers = [], origin = 0, unit = 'α power (count-equiv.²)', simulated }) {
-  chart.draw((ctx, w, h) => {
-    const t = (ms) => (ms - origin) / 1000;
-    const end = Math.max(10, ...blocks.map((b) => t(b.end_arrival_ms ?? b.start_arrival_ms)));
-    const vals = windows.map((x) => x.value).filter(Number.isFinite);
-    const max = vals.length ? Math.max(...vals) * 1.12 : 1;
-    const f = frame(ctx, w, h, { x: { min: 0, max: end, label: 'Seconds since protocol start (browser arrival time)', format: (v) => v.toFixed(0) }, y: { min: 0, max, label: unit, format: compact }, padding: { left: 64, top: 30 } });
-    for (const b of blocks) {
-      const closed = b.label.startsWith('eyes_closed');
-      const open = b.label.startsWith('eyes_open');
-      const x0 = f.x(t(b.start_arrival_ms)), x1 = f.x(t(b.end_arrival_ms ?? b.start_arrival_ms));
-      ctx.fillStyle = closed ? tint(C.data.rose, 0.10) : open ? tint(C.data.periwinkle, 0.08) : tint(C.data.neutral, 0.06);
-      ctx.fillRect(x0, f.box.top, x1 - x0, f.box.bottom - f.box.top);
-      ctx.fillStyle = C.ink.muted;
-      ctx.font = `11px ${theme.font.ui}`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      const short = b.label.replace(/^eyes_closed_pair/, 'C').replace(/^eyes_open_pair/, 'O').replace('settling_eyes_open', 'settle').replace('recovery_eyes_open', 'rec.');
-      ctx.fillText(short, (x0 + x1) / 2, f.box.top + 3);
-    }
-    for (const m of markers) {
-      const x = f.x(t(m.arrival_ms));
-      ctx.strokeStyle = C.status.warning; ctx.setLineDash([4, 3]);
-      ctx.beginPath(); ctx.moveTo(x, f.box.top); ctx.lineTo(x, f.box.bottom); ctx.stroke(); ctx.setLineDash([]);
-      ctx.fillStyle = C.status.warning; ctx.textAlign = 'left'; ctx.fillText(`▲ ${m.note || 'marker'}`, x + 3, f.box.bottom - 16);
-    }
-    for (const p of windows) {
-      if (!Number.isFinite(p.value)) continue;
-      const x = f.x(t(p.mid_ms)), y = f.y(p.value);
-      ctx.beginPath();
-      ctx.arc(x, y, 3.5, 0, Math.PI * 2);
-      const color = p.state === 'closed' ? C.data.rose : p.state === 'open' ? C.data.periwinkle : C.data.neutral;
-      if (p.good) { ctx.fillStyle = color; ctx.fill(); } else { ctx.strokeStyle = color; ctx.lineWidth = 1.2; ctx.stroke(); }
-    }
-    legend(ctx, f.box, [['Eyes open', C.data.periwinkle], ['Eyes closed', C.data.rose], ['Hollow: rejected or not counted', C.data.neutral]]);
     if (simulated) simulatedWatermark(ctx, f.box);
   });
 }

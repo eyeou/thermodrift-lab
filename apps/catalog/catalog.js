@@ -4,7 +4,8 @@
  */
 import { appName, brand } from '../../src/ui/components/lab-mark.js';
 import { h, statusIcon, actionButton } from '../../src/ui/dom.js';
-import { createCanvas, drawTrace, drawSpectrum, drawPairs, drawTimeline } from '../../src/ui/charts/canvas.js';
+import { createCanvas, drawTrace, drawSpectrum } from '../../src/ui/charts/canvas.js';
+import { pairsChart, reportCard, restChart, timeCourseChart } from '../../src/ui/charts/report.js';
 import { montageSvg, SITES_1020, REGION_LETTERS } from '../../src/ui/components/montage.js';
 import { theme } from '../../src/design/theme.js';
 import { placementSvg, placementViews, PLATE_NOTE } from '../../src/ui/components/placement.js';
@@ -101,6 +102,10 @@ const pairs = [
   { pair: 3, open: 100, closed: 150, status: 'eligible', ratio: 1.5 },
   { pair: 4, open: 100, closed: null, status: 'excluded', ratio: null },
 ];
+const restRows = [
+  { state: 'open', status: 'eligible', before: { alpha: 100 }, after: { alpha: 120 }, alpha_ratio_after_before: 1.2 },
+  { state: 'closed', status: 'too_few_windows', before: { alpha: 300 }, after: { alpha: 200 }, alpha_ratio_after_before: null },
+];
 const blocks = ['settling_eyes_open', 'eyes_open_pair1', 'eyes_closed_pair1', 'eyes_closed_pair2', 'eyes_open_pair2'].map((label, i) => ({ label, start_arrival_ms: i * 20000, end_arrival_ms: (i + 1) * 20000 }));
 const timelineWindows = Array.from({ length: 24 }, (_, i) => {
   const mid = 2500 + i * 4100;
@@ -120,8 +125,11 @@ main.append(panel('04', 'Charts', 'synthetic data, always watermarked',
     chartCell('Trace · stale', 170, (c) => drawTrace(c, { samples: trace, range: 50, unit: 'Count-equivalent', status: 'Stale: no data for 2 s', simulated: true })),
     chartCell('Welch PSD', 200, (c) => drawSpectrum(c, { values: psd, kind: 'psd', maxHz: 100, unit: 'PSD (dB re 1 count²/Hz)', simulated: true })),
     chartCell('Spectrum · hidden during protocol', 200, (c) => drawSpectrum(c, { values: psd, kind: 'magnitude', maxHz: 45, unit: 'FFT magnitude, count-equiv.', status: 'Hidden during the protocol', simulated: true }))),
-  chartCell('Pairs', 240, (c) => drawPairs(c, { pairs, simulated: true })),
-  chartCell('Timeline', 220, (c) => drawTimeline(c, { windows: timelineWindows, blocks, markers: [{ arrival_ms: 47000, note: 'swallow' }], origin: 0, simulated: true }))));
+  h('p', { class: 'td-caption', text: 'Result charts: a card on the navy page, a Georgia heading, sans labels, a horizontal grid only, a hero ratio. In a session the heading is computed from the results.' }),
+  reportCard({ title: 'A heading states what the chart shows', sub: 'A sub-line says what was plotted.', hero: { value: '2.00×', definition: 'a hero ratio and its definition' }, draw: (width) => timeCourseChart({ windows: timelineWindows, blocks, markers: [{ arrival_ms: 47000, note: 'swallow' }], origin: 0, width, mark: 'simulated' }) }),
+  h('div', { class: 'ct-states' },
+    reportCard({ title: 'Pairs share one axis', sub: 'A pair that is not eligible is grey and hatched, with its reason.', width: 520, draw: (width) => pairsChart({ pairs, width, mark: 'simulated' }) }),
+    reportCard({ title: 'Rests share one axis', sub: 'The ring is the rest before, the filled point the rest after.', width: 520, draw: (width) => restChart({ rows: restRows, width, mark: 'simulated' }) }))));
 
 // ---------------------------------------------------------------- 05 montage and 10–20 names
 const allSites = Object.keys(SITES_1020).filter((k) => !['M1', 'M2'].includes(k)).map((site) => ({ site, pin: '', cable: 'none', cableColor: 'transparent', role: '' }));

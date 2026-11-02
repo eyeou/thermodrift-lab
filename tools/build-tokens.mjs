@@ -88,8 +88,8 @@ for (const b of bg) {
   add(`ink-muted on ${b}`, c.ink.muted.value, b, 4.5);
   for (const [k, t] of Object.entries(c.data)) if (t.alpha === undefined) add(`data-${k} on ${b} (graphics)`, t.value, b, 3);
   for (const [k, t] of Object.entries(c.status)) add(`status-${k} on ${b} (text)`, t.value, b, 4.5);
-  // Also used as text: links (periwinkle), key numbers (rose), kickers and numerals (brass).
-  for (const k of ['rose', 'periwinkle']) add(`data-${k} on ${b} (text)`, c.data[k].value, b, 4.5);
+  // Also used as text: links (periwinkle), key numbers and hero numbers (rose), kickers and numerals (brass).
+  for (const k of ['rose', 'periwinkle', 'rose-soft', 'periwinkle-soft']) add(`data-${k} on ${b} (text)`, c.data[k].value, b, 4.5);
   add(`brand-brass on ${b} (text)`, c.brand.brass.value, b, 4.5);
 }
 add('white on brand-red', c.brand.white.value, c.brand.red.value, 4.5);

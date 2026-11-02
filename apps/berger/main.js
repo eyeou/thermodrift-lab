@@ -7,7 +7,8 @@
  */
 import { appName, brand } from '../../src/ui/components/lab-mark.js';
 import { h, setText, statusIcon, actionButton } from '../../src/ui/dom.js';
-import { createCanvas, drawTrace, drawSpectrum, drawPairs } from '../../src/ui/charts/canvas.js';
+import { createCanvas, drawTrace, drawSpectrum } from '../../src/ui/charts/canvas.js';
+import { pairsCard, timeCourseCard, timeCourseFrom } from '../../src/ui/charts/report.js';
 import { placementSvg, placementViews, PLATE_NOTE } from '../../src/ui/components/placement.js';
 import { createTabs } from '../../src/ui/components/tabs.js';
 import { createProtocolGuide } from '../../src/ui/components/protocol-guide.js';
@@ -219,11 +220,9 @@ const runPanel = h('aside', { class: 'td-panel td-rail', 'aria-label': 'Run a pr
 // ---------------------------------------------------------------- 04 results
 const resultsBody = h('div', { class: 'td-body' });
 const resultsKicker = h('span', { class: 'td-kicker' });
-const resultsPanel = h('section', { class: 'td-panel', 'aria-label': 'Results' },
+const resultsPanel = h('section', { class: 'td-panel td-panel--open', 'aria-label': 'Results' },
   h('header', {}, h('h2', {}, h('span', { class: 'td-index', text: '04' }), 'Results'), resultsKicker),
   resultsBody);
-const pairHost = h('div');
-let pairChart = null;
 let resultsDirty = true;
 let showExample = false;
 
@@ -524,6 +523,11 @@ function renderResults() {
     };
     const title = `${prot?.name === 'berger-demo' ? 'Demo run (simulated)' : 'Berger test'} #${id}${prot?.audio_condition === 'external_audio' ? ' · external audio, exploratory' : ''} · ${prot?.end_reason ?? 'running'}`;
     nodes.push(h('h3', { text: title }));
+    if (latestProtocol) {
+      const mark = simulated ? 'simulated' : null;
+      const course = timeCourseFrom({ blocks: blocks.filter((b) => b.protocol_id === id), windows: c.windows.filter((w) => w.protocol_id === id), markers: ui.markers });
+      nodes.push(timeCourseCard(course, res, { mark, hero: true }), pairsCard(res, { mark, hero: false }));
+    }
     const rows = res.pairs.map((p) => {
       const ob = blocks.find((b) => b.protocol_id === id && b.label === `eyes_open_pair${p.pair}`);
       const cb = blocks.find((b) => b.protocol_id === id && b.label === `eyes_closed_pair${p.pair}`);
@@ -535,18 +539,16 @@ function renderResults() {
         h('td', { class: 'td-num', text: `${p.open?.valid ?? 0} / ${p.closed?.valid ?? 0}` }),
         h('td', {}, adherenceSelect(ob)), h('td', {}, adherenceSelect(cb)));
     });
-    nodes.push(h('div', { class: 'td-scroll-x' }, h('table', { class: 'td-table' },
-      h('caption', { class: 'td-visually-hidden', text: `${title}: alpha per prompted pair` }),
-      h('thead', {}, h('tr', {}, ...['Pair', 'Open α', 'Closed α', 'Closed / open', 'Clean windows O / C', 'Open block', 'Closed block'].map((t) => h('th', { scope: 'col', text: t })))),
-      h('tbody', {}, ...rows))));
-    nodes.push(h('button', { class: 'td-btn', type: 'button', disabled: c.protocol.running, onclick: () => { c.confirmAllEyeBlocks(); renderResults(); } }, 'I followed every eye-state instruction not excluded'));
-    nodes.push(h('p', { class: 'bl-results-reading' }, res.eligible_count
-      ? [h('strong', { text: `${res.higher_closed_count} of ${res.eligible_count}` }), ' eligible pairs have higher alpha with eyes closed · median ratio ', h('strong', { text: `${res.median_ratio.toFixed(2)}×` }), '. α = median 8–13 Hz power after the fixed filter, count-equivalent².']
-      : 'A pair gets a ratio once both blocks are marked followed and each has at least 2 clean windows.'));
-    if (latestProtocol) {
-      pairChart ??= createCanvas(pairHost, { height: 230, label: 'Alpha per pair, eyes open versus closed' });
-      nodes.push(pairHost);
-      drawPairs(pairChart, { pairs: res.pairs.map((p) => ({ pair: p.pair, open: p.open?.alpha ?? null, closed: p.closed?.alpha ?? null, status: p.status, ratio: p.ratio })), simulated });
+    nodes.push(h('div', { class: 'td-report-block' },
+      h('div', { class: 'td-scroll-x' }, h('table', { class: 'td-table' },
+        h('caption', { class: 'td-visually-hidden', text: `${title}: alpha per prompted pair` }),
+        h('thead', {}, h('tr', {}, ...['Pair', 'Open α', 'Closed α', 'Closed / open', 'Clean windows O / C', 'Open block', 'Closed block'].map((t) => h('th', { scope: 'col', text: t })))),
+        h('tbody', {}, ...rows))),
+      h('button', { class: 'td-btn', type: 'button', disabled: c.protocol.running, onclick: () => { c.confirmAllEyeBlocks(); renderResults(); } }, 'I followed every eye-state instruction not excluded')));
+    if (!latestProtocol) {
+      nodes.push(h('p', { class: 'bl-results-reading' }, res.eligible_count
+        ? [h('strong', { text: `${res.higher_closed_count} of ${res.eligible_count}` }), ' eligible pairs have higher alpha with eyes closed · median ratio ', h('strong', { text: `${res.median_ratio.toFixed(2)}×` }), '. α = median 8–13 Hz power after the fixed filter, count-equivalent².']
+        : 'A pair gets a ratio once both blocks are marked followed and each has at least 2 clean windows.'));
     }
   });
   if (simulated && !c.protocol.running) nodes.push(exampleButton(() => setExample(true)));

@@ -6,7 +6,7 @@
  */
 import { BERGER_V3 } from '../src/analysis/berger-v3.js';
 import { APP as BERGER, MONTAGES as BERGER_MONTAGES, channelLabel as bergerChannelLabel, describeBergerSession, LIMITATIONS as BERGER_LIMITATIONS } from './berger/config.js';
-import { APP as BREATHWORK, MONTAGES as BREATHWORK_MONTAGES, channelLabel as breathworkChannelLabel, describeBreathworkSession, LIMITATIONS as BREATHWORK_LIMITATIONS, eegChannelOf, PRIMARY_METRIC as BREATHWORK_METRIC, ELIGIBILITY as BREATHWORK_ELIGIBILITY } from './breathwork/config.js';
+import { APP as BREATHWORK, MONTAGES as BREATHWORK_MONTAGES, channelLabel as breathworkChannelLabel, describeBreathworkSession, LIMITATIONS as BREATHWORK_LIMITATIONS, eegChannelOf, restComparison, PRIMARY_METRIC as BREATHWORK_METRIC, ELIGIBILITY as BREATHWORK_ELIGIBILITY } from './breathwork/config.js';
 
 export const REGISTRY = Object.freeze({
   [BERGER.id]: {
@@ -29,6 +29,7 @@ export const REGISTRY = Object.freeze({
     describe: describeBreathworkSession,
     limitations: BREATHWORK_LIMITATIONS,
     results: 'rest-comparison',
+    restComparison,
     analysisChannel: eegChannelOf,
     metric: BREATHWORK_METRIC,
     eligibility: BREATHWORK_ELIGIBILITY,

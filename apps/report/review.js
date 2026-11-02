@@ -19,6 +19,13 @@ export function eyeResults(view, channel, adherenceOf) {
   }));
 }
 
+/** Rest before and rest after, for an app that compares them. Null when there is nothing to compare. */
+export function restResults(view, app, channel, adherenceOf) {
+  if (channel === null || !app.restComparison) return null;
+  const comparison = app.restComparison({ blocks: view.blocks, windows: view.windows, channel, adherenceOf });
+  return comparison.rows.some((row) => row.before && row.after) ? comparison : null;
+}
+
 /** The result recorded at export for one protocol. Only Berger Effect records them per protocol, as a list. */
 export function recordedResultFor(view, protocolId) {
   return Array.isArray(view.recorded_results) ? view.recorded_results.find((r) => r.protocol_id === protocolId) ?? null : null;

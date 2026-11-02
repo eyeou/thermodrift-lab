@@ -5,7 +5,7 @@
  */
 import { appName, brand } from '../../src/ui/components/lab-mark.js';
 import { h, setText, statusIcon } from '../../src/ui/dom.js';
-import { createCanvas, drawPairs, drawTimeline } from '../../src/ui/charts/canvas.js';
+import { pairsCard, restCard, timeCourseCard, timeCourseFrom } from '../../src/ui/charts/report.js';
 import { montageSvg } from '../../src/ui/components/montage.js';
 import { openIdbStore } from '../../src/session/store-idb.js';
 import { loadFromStore, loadFromBundle, loadLegacyFiles, appendReviewAnnotation } from '../../src/session/load.js';
@@ -16,7 +16,7 @@ import { blockSummary, BERGER_V3, analysisFilterDescription } from '../../src/an
 import { humanLabel } from '../../src/lab/viewmodel.js';
 import { saveBundle } from '../../src/ui/save-bundle.js';
 import { instrumentFor } from '../registry.js';
-import { eyeProtocolIds, eyeResults, processingFor, recordedResultFor } from './review.js';
+import { eyeProtocolIds, eyeResults, processingFor, recordedResultFor, restResults } from './review.js';
 
 const root = document.getElementById('app');
 const fmt = (v, d = 2) => (Number.isFinite(v) ? v.toFixed(d) : '—');
@@ -110,9 +110,11 @@ function show(next) {
 function render() {
   const channel = app.analysisChannel(view);
   const results = eyeResults(view, channel, adherenceOf);
+  const rests = restResults(view, app, channel, adherenceOf);
   main.replaceChildren(
     summarySection(results, channel),
     ...results.map((r) => resultsSection(r)),
+    ...(rests ? [restSection(rests, channel)] : []),
     blocksSection(channel),
     h('div', { class: 'rp-columns' }, setupSection(), processingSection(channel)),
     h('div', { class: 'rp-columns' }, integritySection(), eventsSection()),
@@ -176,11 +178,14 @@ function resultsSection({ id, protocol, res }) {
   });
   const name = protocol?.name === 'berger-demo' ? 'Demo run (simulated)' : 'Berger test';
   const title = `${name} #${id}${protocol?.audio_condition === 'external_audio' ? ' · external audio, exploratory' : ''}`;
-  const pairHost = h('div'), timelineHost = h('div');
   const recorded = recordedResultFor(view, id);
+  const mark = view.simulated ? 'simulated' : null;
+  const course = timeCourseFrom({ blocks, windows: view.windows.filter((w) => w.protocol_id === id), markers: view.events.filter((e) => e.label === 'operator_marker' || e.label === 'marker'), channel: res.channel });
   const confirm = h('button', { class: 'td-btn', type: 'button', disabled: !canEdit }, 'I followed every eye-state instruction not excluded');
   confirm.onclick = () => annotate(confirmableEyeBlocks(blocks, annotations()), 'as_instructed');
-  const section = panel('02', title, protocol?.end_reason ? `${protocol.end_reason}` : null,
+  return panel('02', title, protocol?.end_reason ? `${protocol.end_reason}` : null,
+    timeCourseCard(course, res, { mark, hero: true }),
+    pairsCard(res, { mark, hero: false }),
     h('div', { class: 'td-scroll-x' }, h('table', { class: 'td-table' },
       h('caption', { class: 'td-visually-hidden', text: `${title}: alpha per prompted pair` }),
       h('thead', {}, h('tr', {}, ...['Pair', 'Open α', 'Closed α', 'Closed / open', 'Raw ratio (secondary)', 'Clean windows O / C', 'Open block', 'Closed block'].map((t) => h('th', { scope: 'col', text: t })))),
@@ -189,25 +194,22 @@ function resultsSection({ id, protocol, res }) {
       !view.editable && view.origin === 'browser' ? h('p', { text: 'Still recording in another tab: review it there.' }) : null,
       view.origin !== 'browser' ? h('p', { text: 'File view: adherence changes stay on this page.' }) : null),
     h('p', { class: 'rp-note' }, `α = median absolute 8–13 Hz power of clean windows after the fixed 0.5–45 Hz filter and notches (count-equivalent², not µV). A pair counts when both blocks are marked followed and each has ≥2 clean windows. Eye states are prompted, not measured.${res.channel ? ` Read from channel ${res.channel + 1}.` : ''}`),
-    recorded ? h('p', { class: 'rp-note', text: `At export: ${recorded.eligible_count} eligible pair(s)${recorded.eligible_count ? `, median ${fmt(recorded.median_ratio)}×` : ''}, with the adherence recorded then.` }) : null,
-    pairHost,
-    h('div', { class: 'td-chart-head' }, h('strong', { text: 'Timeline' }), h('span', { text: 'one dot per 4.1 s analysis window' })),
-    timelineHost);
-  queueMicrotask(() => {
-    drawPairs(createCanvas(pairHost, { height: 240, label: `${title}: alpha per pair, eyes open versus closed` }), {
-      pairs: res.pairs.map((p) => ({ pair: p.pair, open: p.open?.alpha ?? null, closed: p.closed?.alpha ?? null, status: p.status, ratio: p.ratio })), simulated: view.simulated,
-    });
-    const origin = Math.min(...blocks.map((b) => b.start_arrival_ms));
-    const windows = view.windows.filter((w) => w.protocol_id === id && w.channel === res.channel).map((w) => ({
-      mid_ms: w.arrival_ms - (BERGER_V3.window_samples / BERGER_V3.fs_nominal) * 500,
-      value: w.filtered_alpha,
-      state: w.phase?.startsWith('eyes_closed') ? 'closed' : w.phase?.startsWith('eyes_open') ? 'open' : 'other',
-      good: w.accepted_for_block && !w.reasons.length,
-    }));
-    const markers = view.events.filter((e) => (e.label === 'operator_marker' || e.label === 'marker') && e.arrival_ms >= origin && e.arrival_ms <= Math.max(...blocks.map((b) => b.end_arrival_ms ?? 0)));
-    drawTimeline(createCanvas(timelineHost, { height: 220, label: `${title}: alpha per analysis window over time` }), { windows, blocks, markers, origin, simulated: view.simulated });
-  });
-  return section;
+    recorded ? h('p', { class: 'rp-note', text: `At export: ${recorded.eligible_count} eligible pair(s)${recorded.eligible_count ? `, median ${fmt(recorded.median_ratio)}×` : ''}, with the adherence recorded then.` }) : null);
+}
+
+function restSection(comparison, channel) {
+  const channelName = `${channel + 1} · ${view.channel_names?.[channel] ?? app.channelLabel(app.montages[view.montage], channel)}`;
+  return panel('02', 'Rest before → rest after', 'descriptive',
+    restCard(comparison, { mark: view.simulated ? 'simulated' : null, channelName }),
+    h('div', { class: 'td-scroll-x' }, h('table', { class: 'td-table' },
+      h('caption', { class: 'td-visually-hidden', text: 'Rest before versus rest after, per eye state' }),
+      h('thead', {}, h('tr', {}, ...['Eyes', 'α before', 'α after', 'After / before', 'Clean windows B / A'].map((t) => h('th', { scope: 'col', text: t })))),
+      h('tbody', {}, ...comparison.rows.map((r) => h('tr', {},
+        h('td', { text: r.state }),
+        h('td', { class: 'td-num', text: fmt(r.before?.alpha) }),
+        h('td', { class: 'td-num', text: fmt(r.after?.alpha) }),
+        h('td', { class: 'td-num', text: r.status === 'eligible' ? `${r.alpha_ratio_after_before.toFixed(2)}×` : r.status.replaceAll('_', ' ') }),
+        h('td', { class: 'td-num', text: `${r.before?.valid ?? 0} / ${r.after?.valid ?? 0}` })))))));
 }
 
 async function annotate(blocks, value, focusBlock) {

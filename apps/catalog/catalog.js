@@ -7,7 +7,7 @@ import { h, statusIcon, actionButton } from '../../src/ui/dom.js';
 import { createCanvas, drawTrace, drawSpectrum, drawPairs, drawTimeline } from '../../src/ui/charts/canvas.js';
 import { montageSvg, SITES_1020, REGION_LETTERS } from '../../src/ui/components/montage.js';
 import { theme } from '../../src/design/theme.js';
-import { placementSvg, placementViews, PLATE_NOTE } from '../../src/ui/components/placement.js';
+import { placementSvg, placementViews } from '../../src/ui/components/placement.js';
 import { createTabs } from '../../src/ui/components/tabs.js';
 import { MONTAGES } from '../berger/config.js';
 import { MONTAGES as BREATH_MONTAGES } from '../breathwork/config.js';
@@ -125,7 +125,7 @@ main.append(panel('04', 'Charts', 'synthetic data, always watermarked',
 
 // ---------------------------------------------------------------- 05 montage and 10–20 names
 const allSites = Object.keys(SITES_1020).filter((k) => !['M1', 'M2'].includes(k)).map((site) => ({ site, pin: '', cable: 'none', cableColor: 'transparent', role: '' }));
-main.append(panel('05', 'Montages and the 10–20 map', 'pin labels are authoritative; cable colours are for recognition',
+main.append(panel('05', 'Montages and the 10–20 map', 'each lead labelled by its board pin',
   h('div', { class: 'ct-montages' }, ...Object.values(MONTAGES).map((m) => h('figure', { class: 'td-montage', style: 'margin:0' }, montageSvg({ leads: m.leads }), h('figcaption', { class: 'td-caption', text: m.label })))),
   h('div', { class: 'ct-regions' }, ...Object.entries(REGION_LETTERS).map(([letter, region]) => h('span', {}, h('b', { text: letter }), ` ${region}`)), h('span', { text: 'odd numbers left · even right · z midline' })),
   h('p', { class: 'td-caption', text: `${allSites.length} standard sites plus mastoids M1/M2, drawn on a spherical head model (azimuthal equidistant projection).` })));
@@ -133,8 +133,7 @@ main.append(panel('05', 'Montages and the 10–20 map', 'pin labels are authorit
 // ---------------------------------------------------------------- placement plates and tabs
 const plateLeads = BREATH_MONTAGES['breath-6ch'].leads;
 main.append(panel('05b', 'Placement plates and tabs', 'one source for the apps, the README and the tests',
-  createTabs({ label: 'Placement views', className: 'td-tabs--sub', tabs: placementViews(plateLeads).map((view) => ({ id: view, title: view[0].toUpperCase() + view.slice(1), panel: h('figure', { class: 'td-plate', style: 'max-width:520px', html: placementSvg(view, plateLeads) }) })) }).el,
-  h('p', { class: 'td-caption', text: PLATE_NOTE })));
+  createTabs({ label: 'Placement views', className: 'td-tabs--sub', tabs: placementViews(plateLeads).map((view) => ({ id: view, title: view[0].toUpperCase() + view.slice(1), panel: h('figure', { class: 'td-plate', style: 'max-width:520px', html: placementSvg(view, plateLeads) }) })) }).el));
 
 // ---------------------------------------------------------------- 06 motion and focus
 main.append(panel('06', 'Motion and focus', null,

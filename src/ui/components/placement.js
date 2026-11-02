@@ -3,7 +3,7 @@
  * a montage's leads. Pure functions returning SVG markup, so the apps and the README figures
  * (tools/build-figures.mjs) share one source and it can be tested without a browser.
  *
- * Illustrations, not to scale: board pins are authoritative, cable colours vary. Picture-left is
+ * Illustrations, leads named by board pin. Picture-left is
  * the person's right on the front view, and the person's left on the back and top views.
  */
 import { SITES_1020 } from './montage.js';
@@ -209,8 +209,6 @@ export function sitePosition(view, site) {
   const p = v?.sites[site];
   return p ? v.map(p[0], p[1]) : null;
 }
-
-export const PLATE_NOTE = 'Illustration, not to scale. Board pins are authoritative; cable colours vary.';
 
 /** Which plates a montage needs, up to three: front when it has a lead there, then back, side, top. */
 export function placementViews(leads) {
@@ -425,7 +423,7 @@ function mark(entry, side, compact = false) {
 export function placementSvg(view, leads, { compact = false } = {}) {
   const v = VIEWS[view];
   const groups = groupLeads(view, leads);
-  const description = `${v.title} view. ${groups.map((g) => `${g.pins} at ${g.text}`).join('; ')}. Illustration, not to scale.`;
+  const description = `${v.title} view. ${groups.map((g) => `${g.pins} at ${g.text}`).join('; ')}.`;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(description)}">`
     + `<title>${esc(description)}</title>${FRAME}`
     + inner(BODIES[view](leads, compact))
@@ -440,16 +438,15 @@ export function placementLeads(leads) {
 }
 
 /** All the plates of a montage on one sheet, for the README and for sharing. */
-export function placementSheet(leads, { title, note = PLATE_NOTE } = {}) {
+export function placementSheet(leads, { title } = {}) {
   const views = placementViews(leads);
-  const gap = 16, top = title ? 62 : 0, foot = 34;
+  const gap = 16, top = title ? 62 : 0;
   const width = views.length * W + (views.length - 1) * gap;
-  const height = top + H + foot;
+  const height = top + H;
   const plates = views.map((view, i) => placementSvg(view, leads).replace('<svg ', `<svg x="${i * (W + gap)}" y="${top}" width="${W}" height="${H}" `)).join('');
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-20 -20 ${width + 40} ${height + 40}" role="img" aria-label="${esc(title ?? 'Electrode placement')}">`
     + `<rect x="-20" y="-20" width="${width + 40}" height="${height + 40}" fill="${BG}"/>`
     + (title ? `<text x="2" y="34" font-family="${SERIF}" font-size="30" fill="${INK}">${esc(title)}</text>` : '')
     + plates
-    + `<text x="2" y="${top + H + 24}" font-family="${FONT}" font-size="15" fill="${MUTED}">${esc(note)}</text>`
     + '</svg>';
 }

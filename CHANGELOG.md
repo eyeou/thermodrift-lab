@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Home: one link to open each app.
+- The simulator runs on a local server only, for development and tests.
+- New lettering for the Lab mark.
+- Shorter notes around the electrode placement figures.
+
 ## 0.2.0 — 2026-11-02
 
 ### Breathwork 0.2.0 (new, `/breathwork/`)
@@ -16,7 +23,7 @@
 - Header: Thermodrift, the Lab mark, then the app's name. Dropdown arrows moved in from the border.
 - Electrode placement figures (front, back, left side, top) drawn from the montage definitions, in the apps and the README, with a phone version of each plate. `npm run check` fails if they are stale, and a test holds marker positions and labels fixed.
 - A Run panel sits beside the Signal and Protocol tabs: current block, protocol launchers and markers, so the signal stays in view while a protocol starts and runs. During a protocol the launchers are hidden and the current block comes first.
-- Results can show labelled example results before a first run: what a complete run can look like, inspired by real data, smoothed and rounded. They never reach a session or an export.
+- Results can show labelled example results before a first run: what a complete run can look like, inspired from real experimental data. They never reach a session or an export.
 - Session report and home list recordings per session. The report names the app of a session, shows its montage, analysis plan and EEG channel, and can export or flag each recording.
 - Hosting: `/berger/`, `/report/` and `/catalog/` now serve their page.
 - Export metadata: the analysis filter's `preset` reads `eeg`, and `hardware.reported_board` names the board only. Field names are unchanged.

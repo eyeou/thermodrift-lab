@@ -1,28 +1,26 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 — 2026-11-02
 
-- Hosting: `/berger/`, `/report/` and `/catalog/` now serve their page (the folder index was not rewritten).
+### Breathwork 0.2.0 (new, `/breathwork/`)
+- Up to six channels (ECG, EEG at Oz and Cz, EOG, neck and shoulder EMG) around a guided breathing session: a 4-min signal check, then identical 3-min rests before and after the session, which runs between them with acquisition on.
+- Keyboard markers (V, B, H, R, M), a live channel picker with per-channel raw quality, per-block EEG summaries and a before → after table. Every device channel is exported raw.
+- One export per recording. File names give the recording number, local start time, condition and a `-TEST` flag.
+
+### Berger Effect 3.3.0
+- Same analysis plan and measurements, with the tabs and Protocol view below.
+
+### Shared
+- Setup, Signal, Protocol, Results (and Recordings) are tabs, and a link can open on one (`breathwork/#protocol`). The block and time remaining stay visible on every tab during a protocol.
+- Protocol tab: the whole session step by step, then one tab per timed protocol. Block tables are generated from the definitions the engine runs.
+- Header: Thermodrift, the Lab mark, then the app's name. Dropdown arrows moved in from the border.
+- Electrode placement figures (front, back, left side, top) drawn from the montage definitions, in the apps and the README, with a phone version of each plate. `npm run check` fails if they are stale, and a test holds marker positions and labels fixed.
+- A Run panel sits beside the Signal and Protocol tabs: current block, protocol launchers and markers, so the signal stays in view while a protocol starts and runs. During a protocol the launchers are hidden and the current block comes first.
+- Results can show labelled example results before a first run: what a complete run can look like, inspired by real data, smoothed and rounded. They never reach a session or an export.
+- Session report and home list recordings per session. The report names the app of a session, shows its montage, analysis plan and EEG channel, and can export or flag each recording.
+- Hosting: `/berger/`, `/report/` and `/catalog/` now serve their page.
+- Export metadata: the analysis filter's `preset` reads `eeg`, and `hardware.reported_board` names the board only. Field names are unchanged.
 
 ## 0.1.0 — 2026-10-30
 
-First public release. Hosted at <https://app.thermodrift.com> (Berger Lab at `/berger/`).
-
-Approvals, recorded per the release checklist: public repository and hosting approved by the owner, Emeric Yeou, on 30 October 2026; aggregate Berger results (per-pair power, ratios, median, closed-eye peak range) approved the same day. Raw recordings stay private.
-
-First public candidate. Berger Lab rebuilt from the single-file Berger Lab 3.0.1 on shared modules. Code under the MIT licence.
-
-### Berger Lab 3.2.0
-- Same analysis plan as 3.0.1 (`berger-v3-filtered-primary`): filters, Welch settings, window rules and acceptance gates unchanged. On the reference recording, the port reproduces every saved window and block summary of 3.0.1.
-- Sessions are saved continuously in the browser (IndexedDB, ≈1 s chunks, SHA-256 per chunk) instead of living only in memory until export.
-- A tab that closes mid-session leaves an *interrupted* session with its data, detected through Web Locks.
-- One export bundle (`.zip`): `raw.csv`, `windows.csv`, `metadata.json`, `manifest.json` with file hashes.
-- Every disabled control shows why, beside itself.
-- Setup locks at the first acquisition; *New session* keeps the device connected.
-- Simulated source (`?source=simulated`) with silent cues and a short demo protocol, labelled everywhere.
-
-### New
-- Session report: reopens browser sessions, bundles and v3 file sets; post-hoc adherence annotations; timeline; integrity checks.
-- Lab home with the session list and storage status.
-- Design tokens (JSON → CSS / JS / Tailwind preset) with a contrast report, and a design catalogue.
-- Tools: local server, privacy scan, v3 replay.
+First public release: Berger Effect, session report, lab home, design tokens and catalogue, tools. Hosted at <https://app.thermodrift.com>; code under the MIT licence.

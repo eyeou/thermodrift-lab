@@ -6,6 +6,8 @@
 import { theme } from '../../design/theme.js';
 
 const C = theme.color;
+/** A theme colour at a given opacity (#RRGGBBAA). */
+const tint = (hex, alpha) => `${hex}${Math.round(alpha * 255).toString(16).padStart(2, '0')}`;
 
 /** Responsive, DPR-correct canvas inside `container`. */
 export function createCanvas(container, { height = 200, label = 'chart' } = {}) {
@@ -210,7 +212,7 @@ export function drawSpectrum(chart, { values, fs = 500, n = 1024, maxHz = 45, ki
       y: { min: lo, max: hi, label: unit, format: (v) => (kind === 'psd' ? v.toFixed(0) : compact(v)) },
       padding: { left: 64 },
     });
-    ctx.fillStyle = 'rgba(182, 194, 255, 0.10)';
+    ctx.fillStyle = C.data['band-fill'];
     ctx.fillRect(f.x(band[0]), f.box.top, f.x(band[1]) - f.x(band[0]), f.box.bottom - f.box.top);
     ctx.fillStyle = C.ink.muted;
     ctx.font = `11px ${theme.font.ui}`;
@@ -295,7 +297,7 @@ export function drawTimeline(chart, { windows, blocks, markers = [], origin = 0,
       const closed = b.label.startsWith('eyes_closed');
       const open = b.label.startsWith('eyes_open');
       const x0 = f.x(t(b.start_arrival_ms)), x1 = f.x(t(b.end_arrival_ms ?? b.start_arrival_ms));
-      ctx.fillStyle = closed ? 'rgba(250, 139, 148, 0.10)' : open ? 'rgba(182, 194, 255, 0.08)' : 'rgba(138, 143, 168, 0.06)';
+      ctx.fillStyle = closed ? tint(C.data.rose, 0.10) : open ? tint(C.data.periwinkle, 0.08) : tint(C.data.neutral, 0.06);
       ctx.fillRect(x0, f.box.top, x1 - x0, f.box.bottom - f.box.top);
       ctx.fillStyle = C.ink.muted;
       ctx.font = `11px ${theme.font.ui}`;

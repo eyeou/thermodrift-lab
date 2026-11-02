@@ -3,6 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { LabController } from '../src/lab/controller.js';
 import { MemoryStore } from '../src/session/store-memory.js';
 import { readZip } from '../src/session/zip.js';
@@ -107,7 +108,7 @@ test('full Berger flow: gates, 560 s protocol, auto-stop, adherence, export roun
   assert.equal(c.acquisition, 'idle', 'Berger protocol stops acquisition when complete');
   assert.equal(h.writes.at(-1), 'STOP');
   const card = protocolCard(c);
-  assert.equal(card.title, 'Completed — review & save');
+  assert.equal(card.title, 'Completed');
   assert.equal(controlStates(c, ui(c)).abort.hidden, true, 'no misleading “end protocol” after completion');
   const blocks = c.protocol.blocks;
   assert.equal(blocks.length, 10);
@@ -152,7 +153,7 @@ test('full Berger flow: gates, 560 s protocol, auto-stop, adherence, export roun
   assert.equal(raw.rows.length, c.health.samples);
   assert.ok(raw.rows.some((r) => r[4] === 'eyes_closed_pair2'), 'prompted labels preserved after exclusion');
   const meta = JSON.parse(new TextDecoder().decode(files[name('metadata.json')]));
-  assert.equal(meta.version, 'Berger-Lab-3.2.0');
+  assert.equal(meta.version, 'Berger-Lab-3.3.0');
   assert.equal(meta.analysis_processing.plan_id, 'berger-v3-filtered-primary');
   assert.deepEqual(meta.analysis_processing.filter.harmonic_notches_hz, [100, 150, 200]);
   assert.equal(meta.blocks.find((b) => b.label === 'eyes_closed_pair2').adherence, 'exclude');
@@ -162,6 +163,19 @@ test('full Berger flow: gates, 560 s protocol, auto-stop, adherence, export roun
   assert.equal(meta.results[0].eligible_count, 3);
   const win = parseCsv(new TextDecoder().decode(files[name('windows.csv')]));
   assert.ok(win.header.includes('alpha_filtered_8_13_counts2') && win.header.includes('accepted_for_block_before_quality'));
+});
+
+test('audio condition: the launcher is rebuilt when it changes, and the run records the one selected', async () => {
+  const entry = (audioCondition) => protocolEntries({ audioCondition }).find((e) => e.name === 'berger');
+  // Name and detail are equal across conditions, so the rebuild signature has to carry the condition itself.
+  assert.equal(entry('external_audio').detail, entry('cues_only').detail);
+  assert.match(readFileSync('apps/berger/main.js', 'utf8'), /const signature = `\$\{ui\.audioCondition\}\|/);
+  const c = harness().controller;
+  await c.connect();
+  await c.startAcquisition();
+  assert.equal((await c.startProtocol(entry('external_audio').create())).ok, true);
+  assert.equal(c.protocol.active.audio_condition, 'external_audio');
+  assert.equal(c.protocol.active.classification, 'exploratory_external_audio');
 });
 
 test('discontinuities: counter gap resets analysis; restart opens a new segment without inferred loss', async () => {
@@ -262,7 +276,7 @@ test('storage quota: protocol interrupted, acquisition stopped, unsaved rows sti
 });
 
 test('metadata describes unknowns explicitly', () => {
-  const meta = describeBergerSession({ session: { app: 'berger-lab', app_version: '3.2.0', montage: 'single', source: { kind: 'ble', device_name: 'NPG' }, blocks: [], protocols: [] }, events: [], windows: [], annotations: [], sampleCount: 0 });
+  const meta = describeBergerSession({ session: { app: 'berger-lab', app_version: '3.3.0', montage: 'single', source: { kind: 'ble', device_name: 'NPG' }, blocks: [], protocols: [] }, events: [], windows: [], annotations: [], sampleCount: 0 });
   assert.equal(meta.hardware.firmware, 'unknown (not queried by the app)');
   assert.equal(meta.hardware.gain, 'unknown (not calibrated)');
   assert.equal(meta.units, 'raw ADC counts; not calibrated microvolts');

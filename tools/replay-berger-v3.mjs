@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Replay a Berger Lab v3 export (raw CSV + windows CSV + metadata JSON) through this repository's
+ * Replay a Berger v3 export (raw CSV + windows CSV + metadata JSON) through this repository's
  * analysis core and compare with what the live app saved.
  *
  *   node tools/replay-berger-v3.mjs --source <dir> --stem <export stem> [--expect-median <value>]
@@ -189,7 +189,7 @@ const toExportValues = (m, filtered) => ({
     if (ours && (ours.valid !== b.valid || ours.rejected !== b.rejected || ours.alpha !== b.alpha)) summaryMismatch++;
   }
   report.checks.pairs = {
-    adherence_basis: confirm ? 'eye blocks treated as confirmed (participant confirmation after export; recorded export adherence = unconfirmed)' : 'as recorded in export',
+    adherence_basis: confirm ? 'eye blocks treated as confirmed (--confirm-adherence); the export keeps its recorded adherence' : 'as recorded in export',
     block_summary_mismatches: summaryMismatch,
     pairs: result.pairs.map((p) => ({ pair: p.pair, open_alpha: p.open?.alpha, closed_alpha: p.closed?.alpha, ratio: p.ratio, raw_ratio_secondary: p.raw_ratio_secondary, windows: [p.open?.valid, p.closed?.valid], status: p.status })),
     eligible: result.eligible_count,

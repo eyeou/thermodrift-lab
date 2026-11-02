@@ -1,19 +1,19 @@
 /**
- * Berger Lab app definition: everything app-specific lives here (montages, protocols, labels,
+ * Berger Effect app definition: everything app-specific lives here (montages, protocols, labels,
  * export metadata). Acquisition, storage, DSP, protocol timing and charts come from src/.
  */
 import { BERGER_V3, analysisFilterDescription, blockSummary, pairedResults } from '../../src/analysis/berger-v3.js';
 import { baselineProtocol, artifactControlsProtocol, bergerLongProtocol, plannedSeconds } from '../../src/protocol/berger-protocol.js';
 import { effectiveAdherence } from '../../src/analysis/adherence.js';
 
-export const APP = Object.freeze({ id: 'berger-lab', name: 'Berger Lab', version: '3.2.0', versionLabel: 'Berger-Lab-3.2.0', analysisPlan: BERGER_V3.plan_id });
+export const APP = Object.freeze({ id: 'berger-lab', name: 'Berger Effect', version: '3.3.0', versionLabel: 'Berger-Lab-3.3.0', analysisPlan: BERGER_V3.plan_id });
 
 const RED = '#E5484D', BLACK = '#151515', WHITE = '#F2F2F2', BLUE = '#3E7BFA';
 
 export const MONTAGES = Object.freeze({
   single: {
     id: 'single',
-    label: 'One channel · Oz − left ear (validated 29 Oct 2026)',
+    label: 'One channel · Oz − left ear',
     requiredChannels: 1,
     derived: false,
     channelNames: ['Oz − left ear'],
@@ -64,11 +64,11 @@ export function channelLabel(montage, ch) {
 export function protocolEntries({ simulated = false, blockSeconds = 60, audioCondition = 'cues_only' } = {}) {
   const berger = bergerLongProtocol({ blockSeconds, audioCondition });
   const entries = [
-    { name: 'baseline', index: '01', label: 'Relaxed baseline', detail: '60 s · eyes open · quality check', create: () => baselineProtocol() },
-    { name: 'artifact', index: '02', label: 'Blink / jaw controls', detail: '75 s · gentle · inspect afterwards', create: () => artifactControlsProtocol() },
-    { name: 'berger', index: '03', label: 'Long Berger test', detail: `${formatDuration(plannedSeconds(berger))} · four open/closed pairs`, create: () => bergerLongProtocol({ blockSeconds, audioCondition }), requireCueCheck: true, requireCleanSignal: true, requireSpeech: !simulated, primary: true },
+    { name: 'baseline', index: '01', tabTitle: 'Baseline', label: 'Relaxed baseline', detail: '60 s · eyes open · quality check', create: () => baselineProtocol() },
+    { name: 'artifact', index: '02', tabTitle: 'Controls', label: 'Blink / jaw controls', detail: '75 s · gentle · inspect afterwards', create: () => artifactControlsProtocol() },
+    { name: 'berger', index: '03', tabTitle: 'Berger test', label: 'Long Berger test', detail: `${formatDuration(plannedSeconds(berger))} · four open/closed pairs`, create: () => bergerLongProtocol({ blockSeconds, audioCondition }), requireCueCheck: true, requireCleanSignal: true, requireSpeech: !simulated, primary: true },
   ];
-  if (simulated) entries.push({ name: 'berger-demo', index: 'D', label: 'Flow demo (simulated only)', detail: `${formatDuration(plannedSeconds(demoProtocol()))} · same labels, short blocks · not an experiment`, create: demoProtocol, requireCleanSignal: true });
+  if (simulated) entries.push({ name: 'berger-demo', index: 'D', tabTitle: 'Flow demo', label: 'Flow demo (simulated only)', detail: `${formatDuration(plannedSeconds(demoProtocol()))} · same labels, short blocks · not an experiment`, create: demoProtocol, requireCleanSignal: true });
   return entries;
 }
 
@@ -83,6 +83,28 @@ export function demoProtocol() {
   });
   return { ...p, name: 'berger-demo', version: `${p.version}-demo`, blocks, settings: { ...p.settings, block_seconds: 16, classification: 'demo_simulated_only' } };
 }
+
+/** The written protocol shown in the Protocol tab. Block tables come from the definitions above. */
+export const GUIDE = Object.freeze({
+  question: 'Does closing the eyes raise 8–13 Hz power at the back of the head? A rise in at least three of four eligible pairs is consistent with a working chain.',
+  needs: ['NPG Lite on battery', 'Three electrodes: pregelled pads, or gold cups with paste', 'A measuring tape', 'Desktop Chrome or Edge'],
+  time: 'About 20 minutes with setup, 9 min 20 s of it for the test.',
+  steps: [
+    { title: 'Place the electrodes', text: 'A0P at Oz, A0N behind the left ear, REF behind the right ear. Measure nasion to inion: Oz sits 10% up from the inion. Use intact skin and part the hair so the electrode touches the scalp.', tab: 'setup', tabLabel: 'Open the figures' },
+    { title: 'Remove the mains', text: 'Board and laptop on battery, nothing mains-powered touching the setup. Keep the laptop about a metre away and the cables still.' },
+    { title: 'Connect and look', text: 'Connect, start acquisition, wait for a trace. Clench your jaw once: you should see it. Fix anything that clips or stays flat.', tab: 'signal', tabLabel: 'Open the signal' },
+    { title: 'Baseline, then controls', text: 'A relaxed minute, then deliberate blinks and jaw contractions, so you know what those look like in your own setup.', protocol: 'artifact' },
+    { title: 'The long Berger test', text: 'Test the spoken cue, then follow it: four pairs of eyes open and closed, in a balanced, shuffled order. Stay still, and keep your eyes relaxed when they are closed.', protocol: 'berger' },
+    { title: 'Read and export', text: 'Results give closed over open alpha power for each pair. Mark any block you did not follow, then export the bundle. Recordings stay in this browser until exported.', tab: 'results', tabLabel: 'Open the results' },
+  ],
+  protocols: {
+    baseline: { purpose: 'A quality check before anything else: one still minute with the eyes open.' },
+    artifact: { purpose: 'Blinks and jaw contractions on purpose, so these artefacts are recognisable later.' },
+    berger: { purpose: 'Four pairs of eyes open and closed. The ratio within each pair is the result.', note: 'Pair order is shuffled at each start: this is one possible order. Block length is set in the Run panel.' },
+    'berger-demo': { purpose: 'The same labels with short blocks, for trying the interface. Not an experiment.' },
+  },
+  limits: 'One session, one person, descriptive. ADC counts, not microvolts. Eye states are prompted, not measured.',
+});
 
 export function formatDuration(s) {
   return `${Math.floor(s / 60)} min${s % 60 ? ` ${s % 60} s` : ''}`;
@@ -102,6 +124,7 @@ export function describeBergerSession({ session, events, windows, annotations, s
   const eyeProtocols = [...new Set(blocks.filter((b) => b.label.startsWith('eyes_')).map((b) => b.protocol_id))];
   const setup = session.setup ?? {};
   const health = session.health ?? {};
+  const ranAudio = [...new Set((session.protocols ?? []).map((p) => p.audio_condition).filter(Boolean))];
   return {
     version: session.app_version ? `Berger-Lab-${session.app_version}` : APP.versionLabel,
     app: { id: session.app, version: session.app_version, analysis_plan: session.analysis_plan },
@@ -113,10 +136,10 @@ export function describeBergerSession({ session, events, windows, annotations, s
     settings_before_acquisition: setup,
     placement_notes: setup.placement_notes || 'not recorded',
     hypothesis: setup.hypothesis || 'not recorded',
-    audio_condition: setup.audio_condition ?? 'cues_only',
+    audio_condition: ranAudio.length === 1 ? ranAudio[0] : ranAudio.length > 1 ? 'mixed' : setup.audio_condition ?? 'cues_only',
     audio_notes: setup.audio_notes || 'not recorded',
     hardware: {
-      reported_board: 'NPG Lite with VibZ+ playmate (as reported; exact revision unverified)',
+      reported_board: 'NPG Lite (exact revision unverified)',
       firmware: 'unknown (not queried by the app)',
       adc: '12-bit (vendor specification); received as 16-bit containers',
       gain: 'unknown (not calibrated)',

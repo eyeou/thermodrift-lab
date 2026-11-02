@@ -250,6 +250,26 @@ export class LabController {
     return true;
   }
 
+  /** One step from an open session to a fresh one. The finished session stays stored, untouched. */
+  async startNewSession(reason = 'new_session') {
+    if (this.acquisition !== 'idle' || this.protocol.running) return false;
+    if (this.session?.status === 'recording') await this.finishSession('closed', reason);
+    return this.newSession();
+  }
+
+  /** Flag a recording, e.g. as a false start. Nothing is deleted; the flag travels with the export. */
+  async flagRecording(segmentId, flag) {
+    const segment = this.segments.find((s) => s.id === segmentId);
+    if (!segment || !this.recorder) return false;
+    if (flag) segment.flag = flag;
+    else delete segment.flag;
+    this.recorder.patchSession({ segments: this.segments });
+    this.log('recording_flag', { segment_id: segmentId, flag: flag ?? null });
+    try { await this.recorder.flush(); } catch { /* stays pending; the status strip reports storage errors */ }
+    this.emit();
+    return true;
+  }
+
   // ---------- acquisition ----------
   async startAcquisition() {
     if (this.connection !== 'connected' || this.acquisition !== 'idle') return { ok: false, reason: 'Not ready' };
@@ -305,6 +325,7 @@ export class LabController {
     if (segment && segment.end_arrival_ms === undefined) {
       segment.end_index = this.counters.index;
       segment.end_arrival_ms = this.#t();
+      segment.end_utc = new Date().toISOString();
       segment.end_reason = reason;
       this.recorder?.patchSession({ segments: this.segments });
     }
@@ -317,7 +338,7 @@ export class LabController {
     this.receiptSince = this.#t();
   }
 
-  /** v3 clearRings(): analysis state is discarded, never bridged across a discontinuity. */
+  /** Analysis state is discarded, never bridged across a discontinuity. */
   #discontinuity() {
     this.engine?.reset();
     this.display?.reset?.();
@@ -408,7 +429,7 @@ export class LabController {
     if (this.connection !== 'connected') return { ok: false, reason: 'No device connected.', howTo: 'Connect the NPG first.' };
     if (this.acquisition !== 'acquiring') return { ok: false, reason: 'Acquisition is not running.', howTo: 'Click Start acquisition.' };
     if (this.protocol.running) return { ok: false, reason: 'A protocol is already running.', howTo: 'Wait for it to finish or end it.' };
-    if (requireSpeech && this.cues.kind !== 'speech') return { ok: false, reason: 'Spoken cues unavailable in this browser.', howTo: 'Use desktop Chrome with audio output.' };
+    if (requireSpeech && this.cues.kind !== 'speech') return { ok: false, reason: 'Spoken cues unavailable in this browser.', howTo: 'Use desktop Chrome or Edge with audio output.' };
     if (requireCueCheck && this.cues.kind === 'speech' && !(this.cueTest.state === 'spoken' && this.cueTest.heard)) return { ok: false, reason: 'Spoken cues not checked.', howTo: 'Test the cue and tick “I heard it clearly”.' };
     if (requireCleanSignal) {
       const latest = this.engine?.latest?.[0];
@@ -420,7 +441,7 @@ export class LabController {
     const estimate = await this.deps.store.estimate?.();
     if (estimate?.quota != null && estimate?.usage != null) {
       const needed = (seconds + 30) * 500 * BYTES_PER_SAMPLE_ESTIMATE;
-      if (estimate.quota - estimate.usage < needed) return { ok: false, reason: `Not enough browser storage (${Math.round(needed / 1e6)} MB needed).`, howTo: 'Export and delete old sessions, then retry.' };
+      if (estimate.quota - estimate.usage < needed) return { ok: false, reason: `Not enough browser storage (${Math.round(needed / 1e6)} MB needed).`, howTo: 'Export your sessions, then clear this site\'s data in the browser. That removes every session.' };
     }
     return { ok: true };
   }
@@ -509,7 +530,7 @@ export class LabController {
   }
 
   // ---------- export ----------
-  async exportBundle(sink, exportInfo = {}) {
+  async exportBundle(sink, { segmentId = null, ...exportInfo } = {}) {
     if (!this.session) throw new Error('No session to export');
     try { await this.recorder.flush(); } catch { /* pending rows stay in memory and are exported below */ }
     const result = await exportSessionBundle({
@@ -520,6 +541,7 @@ export class LabController {
       windowChannelLabel: (ch) => this.deps.channelLabel(this.montage, ch),
       sink,
       exportInfo,
+      segmentId,
     });
     this.log('export_assembled', { filename: result.filename, files: result.manifest.files, integrity_ok: result.manifest.integrity.ok });
     this.#flushSoon();

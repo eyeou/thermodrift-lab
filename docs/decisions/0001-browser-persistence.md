@@ -4,7 +4,7 @@
 
 ## Context
 
-Berger Lab 3.0.1 kept the whole session in memory (up to 900,000 samples) until the operator exported three files. A closed tab, a crash or a forgotten export lost everything. Recordings are personal data and should not leave the computer by default.
+Sessions run for many minutes at 500 Hz and must survive a closed tab, a crash or a forgotten export, with memory that stays bounded. Recordings are personal data and should not leave the browser by default.
 
 ## Decision
 

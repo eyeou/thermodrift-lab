@@ -1,6 +1,6 @@
 /**
- * In-place iterative radix-2 FFT (decimation in time). Twiddles are computed per butterfly,
- * exactly as Berger Lab v3 did, so historical spectra reproduce bit for bit.
+ * In-place iterative radix-2 FFT (decimation in time). Twiddles are computed per butterfly: the
+ * frozen analysis plan depends on this order, so stored spectra reproduce bit for bit.
  * @param {Float64Array} re real part, length a power of two
  * @param {Float64Array} im imaginary part, same length
  */

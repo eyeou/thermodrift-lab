@@ -4,7 +4,7 @@
 
 ## Context
 
-The instruments must stay inspectable and runnable for years by one person, offline, on any machine with a browser.
+The instruments must stay inspectable and runnable for years, hosted or from a local clone, on any machine with a browser.
 
 ## Decision
 

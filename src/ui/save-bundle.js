@@ -17,10 +17,15 @@ export async function saveBundle({ suggestedName, assemble, onStatus }) {
       handle = writable = null; // dialog unavailable here: fall back to a download
     }
   }
-  onStatus('Assembling bundle…');
+  const started = Date.now();
+  const progress = () => onStatus(`Assembling bundle… ${Math.round((Date.now() - started) / 1000)} s · keep this tab open${writable ? '; the file stays at 0 bytes until it is saved' : ''}`);
+  progress();
+  const timer = setInterval(progress, 1000);
   try {
     if (writable) {
       const result = await assemble((bytes) => writable.write(bytes), 'file-picker');
+      onStatus('Writing the file…');
+      clearInterval(timer);
       await writable.close();
       const ok = result.manifest.integrity.ok;
       onStatus(`Saved ${handle.name}${ok ? '' : ' · integrity issues listed in manifest.json'}`, ok ? 'ready' : 'error');
@@ -28,6 +33,7 @@ export async function saveBundle({ suggestedName, assemble, onStatus }) {
     }
     const parts = [];
     const result = await assemble((bytes) => { parts.push(bytes.slice()); }, 'download');
+    clearInterval(timer);
     const url = URL.createObjectURL(new Blob(parts, { type: 'application/zip' }));
     const a = document.createElement('a');
     a.href = url;
@@ -40,6 +46,7 @@ export async function saveBundle({ suggestedName, assemble, onStatus }) {
     onStatus(`Download started: ${result.filename}`, 'ready');
     return { ...result, method: 'download' };
   } catch (error) {
+    clearInterval(timer);
     try { await writable?.abort(); } catch { /* nothing to abort */ }
     onStatus(`Export failed: ${error.message}. The data are still in this browser.`, 'error');
     return null;

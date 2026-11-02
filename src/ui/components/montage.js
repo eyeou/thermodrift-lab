@@ -51,7 +51,7 @@ export const REGION_LETTERS = Object.freeze({ Fp: 'frontopolar', F: 'frontal', C
 export function montageSvg({ leads, title = 'Electrode montage, top view, nose up', compact = false }) {
   const S = 100;
   const used = new Map(leads.map((l) => [l.site, l]));
-  const root = svg('svg', { viewBox: '-140 -132 280 268', role: 'img', 'aria-label': `${title}. ${leads.map((l) => `${l.pin} (${l.cable} cable) at ${l.site}`).join('; ')}.` });
+  const root = svg('svg', { viewBox: '-140 -132 280 268', role: 'img', 'aria-label': `${title}. ${leads.map((l) => `${l.pin}${l.cable ? ` (${l.cable} cable)` : ''} at ${l.site}`).join('; ')}.` });
   root.append(svg('title', {}, title));
   // head, nose, ears
   root.append(svg('circle', { cx: 0, cy: 0, r: S, fill: 'none', stroke: '#F2F2F2', 'stroke-width': 2.5 }));

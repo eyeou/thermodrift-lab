@@ -1,6 +1,5 @@
 /**
- * SYNTHETIC TEST SIGNALS — for isolated tests only. Nothing here is physiology and nothing here
- * is importable by the apps (see tests/boundaries.test.js).
+ * SYNTHETIC TEST SIGNALS — for isolated tests only. Nothing here is physiology.
  */
 import { encodePacket } from '../src/core/packets.js';
 

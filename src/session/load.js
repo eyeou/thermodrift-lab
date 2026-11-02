@@ -1,6 +1,6 @@
 /**
  * Session views for review surfaces. One shape whether the session comes from this browser's
- * store, an exported bundle (.zip) or a Berger Lab v3 file set (windows CSV + metadata JSON).
+ * store, an exported bundle (.zip) or a Berger v3 file set (windows CSV + metadata JSON).
  *
  * Nothing here talks to hardware. Results are recomputed by the caller from the stored windows
  * with the app's analysis code; for files, the results recorded at export are kept alongside so a
@@ -102,6 +102,7 @@ function viewFromMetadata(meta, { origin, windows, checks, files }) {
     simulated: source.kind === 'simulated',
     montage: meta.mode ?? 'unknown',
     channel_names: meta.channel_names ?? [],
+    channel_kinds: meta.channel_kinds ?? null,
     setup: meta.settings_before_acquisition ?? {},
     placement_notes: meta.placement_notes,
     hypothesis: meta.hypothesis,
@@ -152,6 +153,8 @@ export async function loadFromStore(store, id) {
     close_reason: session.close_reason ?? null,
     created_utc: session.created_utc,
     closed_utc: session.closed_utc ?? null,
+    session_start_epoch_ms: session.session_start_epoch_ms ?? null,
+    last_flush_utc: session.last_flush_utc ?? null,
     source: session.source ?? { kind: 'unknown' },
     simulated: session.source?.kind === 'simulated',
     montage: session.montage,
@@ -201,7 +204,7 @@ export async function loadFromBundle(bytes) {
 }
 
 /**
- * Berger Lab v3 export (three loose files). `files`: [{name, bytes}] — the windows CSV and the
+ * Berger v3 export (three loose files). `files`: [{name, bytes}] — the windows CSV and the
  * metadata JSON are required; the raw CSV, if given, is hashed and counted but not parsed.
  */
 export async function loadLegacyFiles(files) {

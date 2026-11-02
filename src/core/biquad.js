@@ -1,8 +1,8 @@
 /**
  * Second-order sections, Direct Form II, causal and stateful.
  * Coefficient layout per section: [b0, b1, b2, a0(=1), a1, a2].
- * The operation order is fixed on purpose: it is the order used by Berger Lab v3, so stored
- * analysis outputs can be reproduced bit for bit.
+ * The operation order is fixed: the frozen analysis plan depends on it, so stored analysis outputs
+ * can be reproduced bit for bit.
  */
 
 /** One section as a closure with private state. */
@@ -21,7 +21,7 @@ export function createSection(sos) {
 
 /**
  * A cascade with an optional exact power-of-two gain between two groups of sections,
- * mirroring v3: band-pass → × gain → notches → × outputGain.
+ * in the order of the analysis plan: band-pass → × gain → notches → × outputGain.
  */
 export class SosCascade {
   /**

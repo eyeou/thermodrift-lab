@@ -76,7 +76,7 @@ export function createSimulatedTransport({ now = () => performance.now(), setInt
       timer = null;
       connected = false;
     },
-    /** Demo helpers for the catalogue: freeze the stream or drop the link. */
+    /** Test helpers: freeze the stream or drop the link. */
     simulateStall(on = true) { stalled = on; },
     simulateDisconnect() {
       if (timer) clearIntervalFn(timer);

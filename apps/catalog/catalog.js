@@ -2,11 +2,15 @@
  * Design catalogue: every token, component state and chart form used by the instruments.
  * All chart data here are synthetic and drawn with the simulated watermark.
  */
+import { appName, brand } from '../../src/ui/components/lab-mark.js';
 import { h, statusIcon, actionButton } from '../../src/ui/dom.js';
 import { createCanvas, drawTrace, drawSpectrum, drawPairs, drawTimeline } from '../../src/ui/charts/canvas.js';
 import { montageSvg, SITES_1020, REGION_LETTERS } from '../../src/ui/components/montage.js';
 import { theme } from '../../src/design/theme.js';
+import { placementSvg, placementViews, PLATE_NOTE } from '../../src/ui/components/placement.js';
+import { createTabs } from '../../src/ui/components/tabs.js';
 import { MONTAGES } from '../berger/config.js';
+import { MONTAGES as BREATH_MONTAGES } from '../breathwork/config.js';
 
 const root = document.getElementById('app');
 const report = await fetch('../../src/design/contrast-report.json').then((r) => r.json()).catch(() => null);
@@ -16,8 +20,8 @@ const panel = (index, title, kicker, ...body) => h('section', { class: 'td-panel
   h('div', { class: 'td-body' }, ...body));
 
 root.append(h('header', { class: 'td-header' },
-  h('a', { href: '../', 'aria-label': 'Thermodrift Lab home' }, h('img', { class: 'td-logo', src: '../../brand/thermodrift-logo.png', width: 1172, height: 227, alt: 'Thermodrift' })),
-  h('div', { class: 'td-app-name' }, h('strong', { text: 'Design catalogue' }), h('span', { class: 'td-caption', text: `tokens v${theme.version} · square geometry · 8 px rhythm` }))));
+  brand({ href: '../', logo: '../../brand/thermodrift-logo.png' }),
+  appName('Design catalogue', `tokens v${theme.version} · square geometry · 8 px rhythm`)));
 
 const main = h('main', { class: 'td-main' });
 root.append(main);
@@ -61,7 +65,7 @@ const tones = [['ready', 'Device', 'Connected'], ['live', 'Acquisition', 'Acquir
 const cards = [
   ['idle', 'No protocol yet', 'Acquire, inspect the signal, then start a protocol.'],
   ['running', 'Pair 2 · eyes closed', 'Pair 2 of 4: eyes closed for 60 seconds. Stay awake; rest face and jaw.'],
-  ['completed', 'Completed — review & save', 'Review adherence below, then finish the session and open the report.'],
+  ['completed', 'Completed', 'Saved. Review adherence in Results, or continue with the next step.'],
   ['interrupted', 'Interrupted — Data stream stalled', 'Data up to the interruption are saved. Start a new protocol when ready.'],
 ];
 main.append(panel('03', 'Components and states', 'a blocked control always says why, next to itself',
@@ -125,6 +129,12 @@ main.append(panel('05', 'Montages and the 10–20 map', 'pin labels are authorit
   h('div', { class: 'ct-montages' }, ...Object.values(MONTAGES).map((m) => h('figure', { class: 'td-montage', style: 'margin:0' }, montageSvg({ leads: m.leads }), h('figcaption', { class: 'td-caption', text: m.label })))),
   h('div', { class: 'ct-regions' }, ...Object.entries(REGION_LETTERS).map(([letter, region]) => h('span', {}, h('b', { text: letter }), ` ${region}`)), h('span', { text: 'odd numbers left · even right · z midline' })),
   h('p', { class: 'td-caption', text: `${allSites.length} standard sites plus mastoids M1/M2, drawn on a spherical head model (azimuthal equidistant projection).` })));
+
+// ---------------------------------------------------------------- placement plates and tabs
+const plateLeads = BREATH_MONTAGES['breath-6ch'].leads;
+main.append(panel('05b', 'Placement plates and tabs', 'one source for the apps, the README and the tests',
+  createTabs({ label: 'Placement views', className: 'td-tabs--sub', tabs: placementViews(plateLeads).map((view) => ({ id: view, title: view[0].toUpperCase() + view.slice(1), panel: h('figure', { class: 'td-plate', style: 'max-width:520px', html: placementSvg(view, plateLeads) }) })) }).el,
+  h('p', { class: 'td-caption', text: PLATE_NOTE })));
 
 // ---------------------------------------------------------------- 06 motion and focus
 main.append(panel('06', 'Motion and focus', null,

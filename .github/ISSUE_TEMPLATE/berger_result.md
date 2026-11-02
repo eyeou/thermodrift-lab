@@ -4,7 +4,7 @@ about: Share the result of a Berger test you ran
 labels: result
 ---
 
-**Result** (pass or fail, pairs higher with eyes closed, median eyes closed ÷ eyes open)
+**Result** (pairs higher with eyes closed, median eyes closed ÷ eyes open)
 
 **Board and electrodes** (board, firmware if known, electrode type)
 

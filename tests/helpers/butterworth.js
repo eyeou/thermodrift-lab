@@ -1,7 +1,8 @@
 /**
- * Reference Butterworth designs (analog prototype → band transform → bilinear transform with
- * pre-warping), as in scipy.signal.butter. Tests only: shows that every coefficient set in
- * src/core/filters.js is a standard design, reproducible from its parameters.
+ * The standard bilinear-transform Butterworth design: analog prototype → band transform → bilinear
+ * transform with pre-warping. Same method as SciPy's `butter` (SciPy is BSD-3; see LICENSING.md).
+ * Tests only: shows that every coefficient set in src/core/filters.js matches a standard design,
+ * reproducible from its parameters.
  * Returns the overall transfer function {b, a} (sections multiplied out).
  */
 const C = {

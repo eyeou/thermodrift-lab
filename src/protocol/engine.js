@@ -169,7 +169,7 @@ export class ProtocolEngine {
     this.deps.onChange();
   }
 
-  /** Last finished protocol (for "Completed — review & save"). */
+  /** Last finished protocol, for the completed card. */
   lastProtocol() {
     return this.protocols.at(-1) ?? null;
   }

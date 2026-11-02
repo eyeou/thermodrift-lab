@@ -1,13 +1,13 @@
 /**
- * Berger analysis plan v3 ("filtered primary"), extracted from Berger-Lab-3.0.1-filtered without
- * changing its arithmetic or its gating rules.
+ * Berger analysis plan v3 ("filtered primary"). Frozen: any change to its arithmetic or gating
+ * rules needs a new plan id.
  *
  * Primary metric: per block, the median absolute 8–13 Hz Welch power of accepted windows after a
  * fixed causal 0.5–45 Hz Butterworth band-pass plus 50/100/150/200 Hz notches; then closed/open
  * within each prompted pair; descriptive median of the paired ratios. Unit: count-equivalent²
  * (ADC counts are not calibrated microvolts). Raw-signal Welch alpha is a secondary check.
  *
- * Window selection (live, unchanged from v3): every ≥500 ms of arrival time, once 2048 valid
+ * Window selection (live): every ≥500 ms of arrival time, once 2048 valid
  * contiguous samples exist, a window is emitted if ≥2048 samples have arrived since the previous
  * one (non-overlapping; start positions depend on BLE arrival cadence and are stored with each
  * window). A window counts for a block only if it lies inside the block and starts ≥3 s after
@@ -15,8 +15,7 @@
  * Windows are rejected for raw clipping/flatness, for starting within 10 s of a filter restart,
  * or for a raw near-rail sample within the preceding 10 s or inside the window.
  *
- * Plan history: v2 used raw Welch alpha as primary. Results from different plans are not pooled
- * without re-analysis.
+ * Results from different plans are not pooled without re-analysis.
  */
 import { SosCascade } from '../core/biquad.js';
 import { chainSpec, describeChain, COUNT_RESTORE } from '../core/filters.js';
@@ -25,7 +24,6 @@ import { median } from '../core/stats.js';
 
 export const BERGER_V3 = Object.freeze({
   plan_id: 'berger-v3-filtered-primary',
-  recorded_app_version: 'Berger-Lab-3.0.1-filtered',
   fs_nominal: 500,
   window_samples: 2048,
   psd_cadence_ms: 500,
@@ -38,7 +36,7 @@ export const BERGER_V3 = Object.freeze({
   eligibility: 'both blocks complete, both adherence = as_instructed, ≥2 accepted windows each, open alpha > 0',
 });
 
-/** Analysis filter description as stored in exports (v3 field names). */
+/** Analysis filter description as stored in exports. */
 export function analysisFilterDescription() {
   const description = describeChain('eeg', { notch50: true, harmonics: true });
   description.output_units = 'filter output is multiplied by 2048 to restore count-equivalent scale';
@@ -67,7 +65,7 @@ export class BergerV3WindowEngine {
     return this.mode === 'shared' ? 2 : 1;
   }
 
-  /** v3 clearRings(): drop all analysis state. Call at acquisition start, gaps, duplicates and invalid samples. */
+  /** Drop all analysis state. Call at acquisition start, gaps, duplicates and invalid samples. */
   reset() {
     this.rings = [[], [], []];
     this.rowRing = [];
@@ -108,7 +106,7 @@ export class BergerV3WindowEngine {
   }
 
   /**
-   * Run after each notification (v3 cadence). Returns null when nothing was computed.
+   * Run after each notification. Returns null when nothing was computed.
    * @param {number} nowMs session-relative arrival time of the notification
    * @param {null|{id:number, label:string, protocol_id:number, start_arrival_ms:number, speech_requested?:boolean, speech_start_arrival_ms?:number, speech_end_arrival_ms?:number}} block
    *   the protocol block current at this moment, or null when no protocol runs
@@ -167,7 +165,7 @@ export class BergerV3WindowEngine {
 }
 
 /**
- * Block summary for one channel (v3 blockSummary). `windows` = all stored windows of the session.
+ * Block summary for one channel. `windows` = all stored windows of the session.
  * @param {object} block
  * @param {object[]} windows
  * @param {number} channel

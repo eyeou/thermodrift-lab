@@ -25,8 +25,7 @@ const APPS = [
 ];
 
 root.append(h('header', { class: 'td-header' },
-  brand({ logo: '../brand/thermodrift-logo.png' }),
-  h('span', { class: 'td-caption', text: 'Recordings stay in this browser until exported' })));
+  brand({ logo: '../brand/thermodrift-logo.png' })));
 
 const sessionsBody = h('div', { class: 'td-body' });
 const storageLine = h('p');
@@ -35,14 +34,16 @@ const persistStatus = h('p', { role: 'status' });
 
 root.append(h('main', { class: 'td-main' },
   h('div', { class: 'hm-intro' },
-    h('h1', { text: 'Open-source browser instruments for self-run biosignal experiments with an NPG Lite.' })),
+    h('h1', { text: 'Open-source browser instruments for self-run biosignal experiments with an NPG Lite.' }),
+    h('p', {}, h('a', { href: 'https://github.com/eyeou/thermodrift-lab', target: '_blank', rel: 'noopener noreferrer', text: 'Source code on GitHub' }))),
   h('div', { class: 'hm-apps' }, ...APPS.map((a) => h('section', { class: 'td-panel hm-app', 'aria-label': a.name },
     h('header', {}, h('h2', {}, h('span', { class: 'td-index', text: a.index }), a.name)),
     h('div', { class: 'td-body' }, h('p', { text: a.text }), h('div', { class: 'hm-links' }, ...a.links.map(([label, href, cls]) => h('a', { class: cls, href }, label))))))),
   h('section', { class: 'td-panel', 'aria-label': 'Sessions' },
     h('header', {}, h('h2', {}, h('span', { class: 'td-index', text: '05' }), 'Sessions in this browser'), h('span', { class: 'td-kicker', text: 'IndexedDB' })),
     sessionsBody,
-    h('div', { class: 'td-body hm-storage' }, storageLine, persistButton, persistStatus))));
+    h('div', { class: 'td-body hm-storage' }, storageLine, persistButton, persistStatus)),
+  h('p', { class: 'td-caption', text: 'Recordings stay in your browser until exported.' })));
 
 function recordingsText(session) {
   const list = recordingSummaries(session);

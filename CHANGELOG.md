@@ -3,6 +3,10 @@
 ## Unreleased
 
 ### Shared
+- Home: one link to open each app.
+- The simulator runs on a local server only, for development and tests.
+- New lettering for the Lab mark.
+- Shorter notes around the electrode placement figures.
 - Result charts follow the report grammar in Berger Effect, Breathwork, the session report and the example results: a card on the navy page, a Georgia heading, a hero ratio, sans labels and a horizontal grid only. In a session the heading is computed from the results. No computed value changes.
 - Result charts are drawn at the width of their card, so labels keep their size on a phone.
 - Design tokens: `data.rose-soft` and `data.periwinkle-soft`, the two eye states in result charts.

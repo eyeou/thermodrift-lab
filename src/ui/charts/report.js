@@ -351,7 +351,8 @@ export function timeCourseChart({ windows, blocks, markers = [], origin = 0, wid
 
   const xTicks = niceTicks(0, end, narrow ? 4 : 8);
   body += xLabels(xTicks, x, box.bottom + size + 6, tick, size);
-  body += text((box.left + box.right) / 2, H - 6, narrow ? 'Minutes since the protocol started' : 'Minutes since the protocol started (browser arrival time)', { size, anchor: 'middle', fill: INK });
+  const axisTitle = W < 260 ? 'Minutes since the start' : narrow ? 'Minutes since the protocol started' : 'Minutes since the protocol started (browser arrival time)';
+  body += text(W / 2, H - 6, axisTitle, { size, anchor: 'middle', fill: INK });
   const closedPoints = points.filter((p) => p.state === 'closed' && p.good).length, openPoints = points.filter((p) => p.state === 'open' && p.good).length;
   return svgChart({ W, H, mark, box, body, label: `Alpha power per analysis window through the protocol: ${openPoints} clean windows in eyes-open blocks and ${closedPoints} in eyes-closed blocks.` });
 }

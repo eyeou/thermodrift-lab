@@ -30,7 +30,7 @@ export function sessionTimelineSvg(groups, key, { width: W = 860 } = {}) {
     at += secondsOf(group);
     return span;
   });
-  const labels = spanLabels(spans, { y: lg.bottom + size + 12, size: 12, left: 0, right: W, overhang: true });
+  const labels = spanLabels(spans, { y: lg.bottom + size + 12, size: 12, left: 2, right: W - 2, overhang: true });
   const top = lg.bottom + size + 12 + (labels.rows - 1) * 15 + 8, height = narrow ? 18 : 22;
   let body = lg.markup + labels.markup;
   at = 0;

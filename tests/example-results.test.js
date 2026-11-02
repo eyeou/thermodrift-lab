@@ -94,9 +94,9 @@ test('example results: the long format has the shape its heading and reading sta
 });
 
 test('example results: the long chart keeps one scale per row on one time axis', () => {
-  for (const width of [300, 340, 520, 1040]) {
+  for (const width of [256, 300, 340, 520, 1040]) {
     const svg = longSessionSvg(BREATHWORK_LONG_EXAMPLE, { width });
-    for (const words of ['Breathing, depth × rate', 'Heart rate (bpm)', 'Theta and alpha at Oz', 'Theta 8×', 'Alpha 0.4×', 'Minutes from the start of the rest before', '>70<', 'Theta 4–8 Hz', 'Alpha 8–13 Hz']) assert.ok(svg.includes(words), `${width}: ${words}`);
+    for (const words of ['Breathing, depth × rate', 'Heart rate (bpm)', 'Theta and alpha at Oz', 'Theta 8×', 'Alpha 0.4×', width < 300 ? '>Minutes from the start<' : '>Minutes from the start of the rest before<', '>70<', 'Theta 4–8 Hz', 'Alpha 8–13 Hz']) assert.ok(svg.includes(words), `${width}: ${words}`);
     assert.equal(svg.match(/<path d="M[^"]*" fill="none" stroke="[^"]*" stroke-width="1\.7"/g).length, 4, 'breathing, heart rate, theta and alpha');
     const anchored = [...svg.matchAll(/<text x="(-?[\d.]+)"/g)].map((m) => Number(m[1]));
     assert.ok(anchored.every((v) => v >= 0 && v <= width), `${width}: every label inside the picture`);

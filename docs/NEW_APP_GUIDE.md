@@ -43,4 +43,4 @@ Register the app in `apps/registry.js` (name, plan, montages, channel label, des
 
 ## 7. Add it to the home page and the host
 
-One entry in `apps/home.js` with a hardware link and a simulator link. Add the app to the redirects and rewrites in `vercel.json`, and its URLs to `tools/serve.mjs`.
+One entry in `apps/home.js` with a link to open the app. Add the app to the redirects and rewrites in `vercel.json`, and its URLs to `tools/serve.mjs`.

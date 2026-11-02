@@ -96,7 +96,7 @@ export const MONTAGES = Object.freeze({
       { site: 'neck-lower', pin: 'A2N', cable: 'black', cableColor: BLACK, role: 'EMG −', siteLabel: 'same muscle, 2 cm lower along its line', electrode: 'patch', short: 'neck' },
       REF_LEAD,
     ],
-    notes: 'CN link off. The neck EMG records neck muscle activity. Pin labels are authoritative; cable colours vary.',
+    notes: 'CN link off. The neck EMG records neck muscle activity.',
     routingCheck: 'A0P–left ribs, A0N–right collarbone, A1P–Oz, A1N–left ear, A2P/A2N–left neck muscle, REF–right ear, CN link off.',
   },
   'breath-fpz': {

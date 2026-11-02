@@ -2,14 +2,14 @@
  * Berger Effect 3.3 — live acquisition surface.
  * Saved sessions open in ../report/, which never connects to hardware.
  *
- *   ?source=simulated   synthetic test pattern + silent cues (labelled everywhere)
+ *   ?source=simulated   on a local server only: synthetic test pattern + silent cues (labelled everywhere)
  *   (default)           NPG Lite over Web Bluetooth + spoken cues
  */
 import { appName, brand } from '../../src/ui/components/lab-mark.js';
 import { h, setText, statusIcon, actionButton } from '../../src/ui/dom.js';
 import { createCanvas, drawTrace, drawSpectrum } from '../../src/ui/charts/canvas.js';
 import { pairsCard, timeCourseCard, timeCourseFrom } from '../../src/ui/charts/report.js';
-import { placementSvg, placementViews, PLATE_NOTE } from '../../src/ui/components/placement.js';
+import { placementSvg, placementViews } from '../../src/ui/components/placement.js';
 import { createTabs } from '../../src/ui/components/tabs.js';
 import { createProtocolGuide } from '../../src/ui/components/protocol-guide.js';
 import { BERGER_EXAMPLE, exampleButton, exampleView } from '../../src/ui/components/example-results.js';
@@ -28,7 +28,7 @@ import { saveBundle } from '../../src/ui/save-bundle.js';
 import { bundleStem } from '../../src/session/recordings.js';
 import { APP, MONTAGES, GUIDE, channelLabel, protocolEntries, describeBergerSession } from './config.js';
 
-const simulated = new URLSearchParams(location.search).get('source') === 'simulated';
+const simulated = new URLSearchParams(location.search).get('source') === 'simulated' && ['127.0.0.1', 'localhost'].includes(location.hostname);
 const root = document.getElementById('app');
 const fmt = (v, digits = 2) => (Number.isFinite(v) ? v.toFixed(digits) : '—');
 
@@ -145,7 +145,7 @@ const panel = (index, title, kicker, ...body) => h('section', { class: 'td-panel
   h('div', { class: 'td-body' }, ...body));
 
 const setupPanel = panel('01', 'Setup', null,
-  field('Montage', montageSelect), montageFigure, h('p', { class: 'td-caption', text: PLATE_NOTE }),
+  field('Montage', montageSelect), montageFigure,
   h('div', { class: 'td-setup-columns' },
     h('div', {}, leadList, montageNotes),
     h('div', {},

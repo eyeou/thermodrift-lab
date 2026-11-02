@@ -5,7 +5,7 @@ Source of truth: `src/design/tokens.json`. `npm run tokens` generates `tokens.cs
 ## Identity
 
 - **Logo**: `brand/thermodrift-logo.png`, aspect 1172 : 227, never recoloured or stretched; 176 px wide in app headers.
-- **Lab mark**: the logo, a brass diamond, then LAB in drawn inline capitals (`src/ui/components/lab-mark.js`), with 24 px either side of the diamond. App headers read `Thermodrift ◆ LAB ◆ App name`.
+- **Lab mark**: the logo, a brass diamond, then LAB in Limelight converted to paths (`src/ui/components/lab-mark.js`), with 24 px either side of the diamond. App headers read `Thermodrift ◆ LAB ◆ App name`.
 - **Brand red `#B61E20`**: fills and labels with white text, primary buttons. Never text or thin lines on navy (contrast 2.97).
 - **Rose `#E5606E`**: eyes-closed data and key numbers. **Periwinkle `#6F86F2`**: eyes-open data, traces and links.
 - **Soft rose `#FA8B94`, soft periwinkle `#B6C2FF`**: the same two states in result charts, as on the website. Soft rose also carries the hero number. Live canvas charts keep the pair above.
@@ -61,7 +61,7 @@ Placement plates are instructions first: the anatomy says where an electrode goe
 | Side view | The skull is the sphere the 10–20 sites are computed on. Draw the face, jaw, neck and trunk around it; never reshape it above the nasion–inion line. |
 | Markers | Radius 8, filled with the cable colour. Gold ring: cup with paste. White ring and centre dot: patch with a snap. Two leads on one site: stacked, one label. Markers sit above all anatomy. |
 | Labels | Board pin first, bold; site below it, muted. Labels stay in the side columns, off the figure, with a 1 px leader to the marker. |
-| Limits | Every figure carries “Illustration, not to scale. Board pins are authoritative; cable colours vary.” Plates never carry measured values. |
+| Limits | Plates never carry measured values. |
 | Accessibility | Each plate has a title and label listing every pin and site. Pins are named in text, so identity never depends on colour. Plates stay at least 400 px wide. For phones, the compact plate keeps every marker position, drops the site text, enlarges pins and markers, and sits with a table listing each pin and site. |
 
 `tests/placement.test.js` freezes every marker position, colour and label against `tests/helpers/placement-golden.json`, so redrawing anatomy cannot move a site unnoticed. After changing a drawing, run `npm run figures` and review the plates. Update the frozen file (`UPDATE_PLACEMENT_GOLDEN=1 npm test`) only for a reviewed change of site or label.

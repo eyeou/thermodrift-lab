@@ -1,8 +1,6 @@
-# The hosted app (app.thermodrift.com) serves apps/, src/ and brand/ only.
-/.claude
+# The hosted app serves apps/, src/ and brand/ only.
 /.github
 /docs
-/fixtures
 /tests
 /tools
 /*.md

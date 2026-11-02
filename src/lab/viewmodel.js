@@ -4,13 +4,15 @@
  * No DOM here, so every blocker is unit-tested.
  */
 import { PROTOCOL } from '../protocol/engine.js';
+import { latestRecording } from '../session/recordings.js';
 
 const ok = (label, extra = {}) => ({ enabled: true, label, why: null, ...extra });
 const no = (label, why, extra = {}) => ({ enabled: false, label, why, ...extra });
 
 /**
  * @param {object} c controller (or a plain object with the same fields)
- * @param {{missingSetup:string[], protocols?:object[], deviceLabel?:string}} ui
+ * @param {{missingSetup:string[], protocols?:object[], deviceLabel?:string, recordings?:boolean}} ui
+ *   `recordings`: the app exports per recording and allows a new session from an open one.
  */
 export function controlStates(c, ui) {
   const device = ui.deviceLabel ?? 'NPG';
@@ -24,7 +26,7 @@ export function controlStates(c, ui) {
 
   const states = {};
   states.connect =
-    c.connection === 'unsupported' ? no(`Connect ${device}`, 'Web Bluetooth unavailable: open in desktop Chrome.')
+    c.connection === 'unsupported' ? no(`Connect ${device}`, 'Web Bluetooth unavailable: open in desktop Chrome or Edge.')
     : c.connection === 'connecting' ? no('Connecting…', `Choose the ${device} in the browser dialog.`)
     : connected ? no('Connected', null)
     : ok(c.connection === 'permission_denied' ? 'Retry connection' : `Connect ${device}`);
@@ -36,7 +38,9 @@ export function controlStates(c, ui) {
     : busy ? no('Start acquisition', 'Wait for the current operation.')
     : ui.missingSetup.length ? no('Start acquisition', `Complete setup: ${ui.missingSetup.join(', ')}.`)
     : storageFull ? no('Start acquisition', 'Storage full. Export, then start a new session.')
-    : ok(c.segments?.length ? 'Restart acquisition' : 'Start acquisition', { note: c.segments?.length ? 'Opens a new segment in this session. Filters restart.' : null });
+    : !c.segments?.length ? ok('Start acquisition', { note: null })
+    : ui.recordings ? ok(`Add recording ${c.segments.length + 1} to this session`, { note: 'Saved apart from the others. For an unrelated test, use New session.' })
+    : ok('Restart acquisition', { note: 'Opens a new segment in this session. Filters restart.' });
 
   states.stop = acquiring ? ok(running ? 'Stop (ends protocol)' : 'Stop') : no('Stop', null);
   states.disconnect = connected && !busy ? ok('Disconnect') : no('Disconnect', null);
@@ -69,8 +73,14 @@ export function controlStates(c, ui) {
     : ok(c.cueTest.state === 'spoken' ? 'Test again' : 'Test spoken cue');
   states.heard = c.cueTest.state === 'spoken' && !running ? ok('I heard it clearly') : no('I heard it clearly', c.cueTest.state === 'failed' ? `Cue failed (${c.cueTest.error}). Check audio output.` : null);
   states.finish = c.session && !finished && !running ? ok('Finish session') : no('Finish session', running ? 'End or complete the protocol first.' : null, { hidden: !c.session || finished });
-  states.newSession = finished && c.acquisition === 'idle' ? ok('New session') : no('New session', null, { hidden: true });
-  states.export = c.session ? ok('Export bundle (.zip)') : no('Export bundle (.zip)', 'Nothing recorded yet.');
+  const openAndIdle = !!c.session && !finished && c.acquisition === 'idle' && !running;
+  states.newSession = finished && c.acquisition === 'idle' ? ok('New session')
+    : ui.recordings && openAndIdle ? ok('New session', { note: 'Finishes this one. Its data stay saved.' })
+    : no('New session', null, { hidden: true });
+  const lastRecording = latestRecording(c.segments);
+  states.export = !c.session ? no('Export bundle (.zip)', 'Nothing recorded yet.')
+    : ui.recordings && lastRecording?.id > 1 ? ok(`Export recording ${lastRecording.id} (latest)`)
+    : ok('Export bundle (.zip)');
   return states;
 }
 
@@ -84,10 +94,15 @@ export function protocolCard(c) {
   }
   const last = p.lastProtocol();
   if (!last) return { state: 'idle', title: 'No protocol yet', instruction: 'Acquire, inspect the signal, then start a protocol.' };
-  if (p.state === PROTOCOL.COMPLETED) return { state: 'completed', title: 'Completed — review & save', instruction: 'Review adherence below, then finish the session and open the report.' };
+  if (p.state === PROTOCOL.COMPLETED) return { state: 'completed', title: 'Completed', instruction: 'Saved. Review adherence in Results, or continue with the next step.' };
   if (p.state === PROTOCOL.INTERRUPTED) return { state: 'interrupted', title: `Interrupted — ${last.end_reason}`, instruction: 'Data up to the interruption are saved. Start a new protocol when ready.' };
   if (p.state === PROTOCOL.ABORTED) return { state: 'aborted', title: 'Ended by operator', instruction: 'Data are saved. Start a new protocol when ready.' };
   return { state: 'idle', title: `Last: ${last.name} · ${last.end_reason}`, instruction: 'Ready for another protocol.' };
+}
+
+/** The reason when every protocol is blocked for the same one, so it can be shown once; otherwise null. */
+export function sharedReason(reasons) {
+  return reasons.length > 1 && reasons[0] && reasons.every((r) => r === reasons[0]) ? reasons[0] : null;
 }
 
 /** Status strip items: label, value, tone (ready | live | warning | error | stale | idle | simulated). */

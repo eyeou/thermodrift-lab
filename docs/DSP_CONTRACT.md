@@ -11,7 +11,7 @@ Two paths that never mix:
 
 ## Analysis plan `berger-v3-filtered-primary`
 
-Frozen: identical arithmetic to Berger Lab 3.0.1. Any change requires a new plan id.
+Frozen. Any change requires a new plan id.
 
 **Filter**, per channel, causal, Direct Form II sections, fixed order:
 
@@ -44,9 +44,15 @@ Warnings (never reject): strong 50 Hz (48–52 Hz > 20 % of 0.5–100 Hz power),
 
 **Per pair** (eyes open + eyes closed of the same prompted pair): eligible when both blocks are complete, both annotated *followed*, each has ≥ 2 clean windows and open alpha > 0. Ratio = closed / open. Session summary: number of eligible pairs, how many have ratio > 1, median ratio. No p-values: adjacent blocks are not independent samples.
 
+## Analysis plan `breathwork-1`
+
+The Breathwork app runs the same window engine, filter, Welch settings and rejection rules on channels 1 and 2. Channel 2 (Oz in every montage) is its EEG summary; later channels are exported raw only.
+Per block on channel 2: median absolute 8–13 Hz power of clean windows, plus the alpha share and the slow share (0.5–8 Hz) of raw 0.5–45 Hz Welch power.
+Rest after against rest before, per eye state, on the latest complete block of each label: a row counts when neither block is excluded and each has ≥ 2 clean windows, and the result stays descriptive.
+
 ## Display path
 
-Selectable: EEG view (same 0.5–45 Hz chain), Chords-reference view (order-2 Butterworth 0.1 Hz high-pass and 90 Hz low-pass, as in Chords-Web `a0a77f7`, whose comments say 1/45 Hz), or raw ADC with Welch PSD. FFT: 1024 samples, rectangular window after mean removal, magnitude scaled 2/N, refreshed every 50 samples, mean of the last 20 updates (≈2 s lag). Band shares in the display are secondary and never called a focus or relaxation score.
+Selectable: EEG view (same 0.5–45 Hz chain), Chords-reference view (order-2 Butterworth 0.1 Hz high-pass and 90 Hz low-pass, the display settings of Chords-Web `a0a77f7`; labels here give the cut-offs of these designs, where its source comments state 1 Hz and 45 Hz), or raw ADC with Welch PSD. FFT: 1024 samples, rectangular window after mean removal, magnitude scaled 2/N, refreshed every 50 samples, mean of the last 20 updates (≈2 s lag). Band shares in the display are secondary and never called a focus or relaxation score.
 
 ## Units
 
@@ -59,7 +65,7 @@ Selectable: EEG view (same 0.5–45 Hz chain), Chords-reference view (order-2 Bu
 
 Microvolts appear nowhere: the gain is not calibrated.
 
-## Validation
+## Verification
 
 - Unit tests (`npm test`): tone frequency, Parseval normalisation, band edges, filter response, state and reset, packet layouts, counters, quality flags, recorder, bundle round trip, full simulated protocol.
-- `tools/replay-berger-v3.mjs`: replays a Berger Lab v3 export through this code and compares coefficients, continuity, every saved window, a live re-derivation of window positions, and block summaries. Run locally on private recordings; they are never committed.
+- `tools/replay-berger-v3.mjs`: replays a Berger v3 export through this code and compares coefficients, continuity, every saved window, a live re-derivation of window positions, and block summaries. It runs locally; recordings are never committed.

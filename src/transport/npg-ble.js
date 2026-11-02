@@ -1,8 +1,7 @@
 /**
- * NPG Lite over Web Bluetooth (Chrome, secure context such as http://127.0.0.1).
- * Same service, characteristics and START/STOP command sequence as Berger Lab v3; no other
- * command is sent to the device (WHORU/STATUS exist in the inspected firmware but are not used
- * until tested on the board). One BLE client at a time: close Chords or other apps first.
+ * NPG Lite over Web Bluetooth (desktop Chrome or Edge, secure context such as http://127.0.0.1).
+ * Only the START and STOP commands are sent to the device (WHORU/STATUS exist in the inspected
+ * firmware but are not used). One BLE client at a time: close Chords or other apps first.
  */
 export const NPG_BLE = Object.freeze({
   service: '4fafc201-1fb5-459e-8fcc-c5c9c331914b',
@@ -37,7 +36,7 @@ export function createNpgBleTransport({ bluetooth = globalThis.navigator?.blueto
     supported: !!bluetooth,
     on(event, fn) { listeners[event].add(fn); return () => listeners[event].delete(fn); },
     async connect() {
-      if (!bluetooth) throw new TransportError('Web Bluetooth unavailable. Open this page in desktop Chrome.', 'unsupported');
+      if (!bluetooth) throw new TransportError('Web Bluetooth unavailable. Open this page in desktop Chrome or Edge.', 'unsupported');
       try {
         device = await bluetooth.requestDevice({ filters: [{ namePrefix: NPG_BLE.namePrefix }], optionalServices: [NPG_BLE.service] });
       } catch (error) {

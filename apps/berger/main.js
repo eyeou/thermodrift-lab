@@ -1,15 +1,19 @@
 /**
- * Berger Lab 3.2 — live acquisition surface.
+ * Berger Effect 3.3 — live acquisition surface.
  * Saved sessions open in ../report/, which never connects to hardware.
  *
  *   ?source=simulated   synthetic test pattern + silent cues (labelled everywhere)
  *   (default)           NPG Lite over Web Bluetooth + spoken cues
  */
+import { appName, brand } from '../../src/ui/components/lab-mark.js';
 import { h, setText, statusIcon, actionButton } from '../../src/ui/dom.js';
 import { createCanvas, drawTrace, drawSpectrum, drawPairs } from '../../src/ui/charts/canvas.js';
-import { montageSvg } from '../../src/ui/components/montage.js';
+import { placementSvg, placementViews, PLATE_NOTE } from '../../src/ui/components/placement.js';
+import { createTabs } from '../../src/ui/components/tabs.js';
+import { createProtocolGuide } from '../../src/ui/components/protocol-guide.js';
+import { BERGER_EXAMPLE, exampleButton, exampleView } from '../../src/ui/components/example-results.js';
 import { LabController } from '../../src/lab/controller.js';
-import { controlStates, protocolCard, statusItems, humanLabel } from '../../src/lab/viewmodel.js';
+import { controlStates, protocolCard, statusItems, humanLabel, sharedReason } from '../../src/lab/viewmodel.js';
 import { BergerV3WindowEngine, pairedResults } from '../../src/analysis/berger-v3.js';
 import { createDisplayProcessor } from '../../src/core/display-reference.js';
 import { openIdbStore } from '../../src/session/store-idb.js';
@@ -20,7 +24,8 @@ import { createSpeechCues, createSilentCues } from '../../src/protocol/cues.js';
 import { createSessionLocks, recoverAbandonedSessions } from '../../src/lab/locks.js';
 import { COMPLETION_CUE, INTERRUPTION_CUE } from '../../src/protocol/berger-protocol.js';
 import { saveBundle } from '../../src/ui/save-bundle.js';
-import { APP, MONTAGES, channelLabel, protocolEntries, describeBergerSession } from './config.js';
+import { bundleStem } from '../../src/session/recordings.js';
+import { APP, MONTAGES, GUIDE, channelLabel, protocolEntries, describeBergerSession } from './config.js';
 
 const simulated = new URLSearchParams(location.search).get('source') === 'simulated';
 const root = document.getElementById('app');
@@ -91,12 +96,11 @@ window.__bergerLab = controller; // DevTools inspection only
 // ---------------------------------------------------------------- header, notices, status
 const sessionLabel = h('span', { class: 'td-caption td-mono', text: 'No session yet' });
 root.append(h('header', { class: 'td-header' },
-  h('a', { href: '../', 'aria-label': 'Thermodrift Lab home' }, h('img', { class: 'td-logo', src: '../../brand/thermodrift-logo.png', width: 1172, height: 227, alt: 'Thermodrift' })),
-  h('div', { class: 'td-app-name' }, h('strong', { text: APP.name }), h('span', { class: 'td-caption', text: `v${APP.version} · eyes-open / eyes-closed alpha · analysis plan berger-v3` })),
+  brand({ href: '../', logo: '../../brand/thermodrift-logo.png' }),
+  appName(APP.name, `v${APP.version} · eyes-open / eyes-closed alpha · analysis plan berger-v3`),
   h('span', { class: 'td-spacer' }),
   h('span', { class: 'td-source', dataset: { kind: simulated ? 'simulated' : 'ble' } }, statusIcon(simulated ? 'simulated' : 'live'), simulated ? 'Simulated test pattern' : 'NPG Lite · Bluetooth'),
   sessionLabel));
-if (simulated) root.append(h('div', { class: 'td-simulated-banner', role: 'note' }, 'SIMULATED — a synthetic test pattern, not a recording and not physiology. For trying the interface.'));
 const notices = h('div');
 root.append(notices);
 if (storeWarning) notices.append(h('p', { class: 'bl-notice', text: storeWarning }));
@@ -123,7 +127,7 @@ root.append(h('div', { class: 'bl-transport', role: 'toolbar', 'aria-label': 'Ac
 
 // ---------------------------------------------------------------- 01 setup
 const montageSelect = h('select', {}, ...Object.values(MONTAGES).map((m) => h('option', { value: m.id, text: m.label })));
-const montageFigure = h('div', { class: 'td-montage' });
+const montageFigure = h('div', { class: 'td-plates', role: 'group', tabindex: '0', 'aria-label': 'Electrode placement figures' });
 const leadList = h('div', { class: 'td-lead-list' });
 const montageNotes = h('p', { class: 'td-caption' });
 const checks = { battery_only: h('input', { type: 'checkbox' }), contact: h('input', { type: 'checkbox' }), routing: h('input', { type: 'checkbox' }) };
@@ -140,21 +144,24 @@ const panel = (index, title, kicker, ...body) => h('section', { class: 'td-panel
   h('div', { class: 'td-body' }, ...body));
 
 const setupPanel = panel('01', 'Setup', null,
-  field('Montage', montageSelect), montageFigure, leadList, montageNotes,
-  field('Pads', padSelect),
-  h('div', { class: 'td-field' }, h('span', { text: 'Before acquisition' }),
-    h('label', { class: 'td-check' }, checks.battery_only, h('span', { text: 'NPG and laptop on battery; nothing mains-powered touches the setup.' })),
-    h('label', { class: 'td-check' }, checks.contact, h('span', { text: 'Skin intact and comfortable; contacts stable.' })),
-    h('label', { class: 'td-check' }, checks.routing, routingText)),
-  field('Placement notes', placement),
-  field('Prediction', hypothesis),
-  field('Audio notes', audioNotes),
-  lockedNote);
+  field('Montage', montageSelect), montageFigure, h('p', { class: 'td-caption', text: PLATE_NOTE }),
+  h('div', { class: 'td-setup-columns' },
+    h('div', {}, leadList, montageNotes),
+    h('div', {},
+      field('Pads', padSelect),
+      h('div', { class: 'td-field' }, h('span', { text: 'Before acquisition' }),
+        h('label', { class: 'td-check' }, checks.battery_only, h('span', { text: 'NPG and laptop on battery; nothing mains-powered touches the setup.' })),
+        h('label', { class: 'td-check' }, checks.contact, h('span', { text: 'Skin intact and comfortable; contacts stable.' })),
+        h('label', { class: 'td-check' }, checks.routing, routingText)),
+      field('Placement notes', placement),
+      field('Prediction', hypothesis),
+      field('Audio notes', audioNotes),
+      lockedNote)));
 
 // ---------------------------------------------------------------- 02 signal
 const select = (options, value) => h('select', {}, ...options.map(([v, t]) => h('option', { value: v, text: t, selected: String(v) === String(value) })));
-const viewSelect = select([['eeg', 'EEG view · 0.5–45 Hz'], ['chords', 'Chords-reference view'], ['raw', 'Raw ADC + Welch PSD']], ui.view);
-const notchSelect = select([['50h', '50 + 100/150/200 Hz'], ['50', '50 Hz only'], ['off', 'Off']], ui.notch);
+const viewSelect = select([['eeg', 'EEG · 0.5–45 Hz'], ['chords', 'Reference · 0.1–90 Hz'], ['raw', 'Raw + Welch PSD']], ui.view);
+const notchSelect = select([['50h', '50 Hz + harmonics'], ['50', '50 Hz only'], ['off', 'Off']], ui.notch);
 const spectrumSelect = select([[45, '0–45 Hz'], [100, '0–100 Hz'], [250, '0–250 Hz']], ui.spectrumMax);
 const rangeSelect = select([25, 50, 100, 250, 500, 1000, 2048].map((v) => [v, `±${v}`]), ui.traceRange);
 const hideCheck = h('input', { type: 'checkbox', checked: true });
@@ -170,8 +177,9 @@ const signalPanel = panel('02', 'Signal', 'Display only',
   h('div', { class: 'bl-view-controls' }, field('View', viewSelect), field('Notch', notchSelect), field('Spectrum', spectrumSelect), field('Trace scale', rangeSelect)),
   h('div', {}, h('span', { class: 'td-kicker', text: 'Channel 1 · A0' }), channelTitle),
   flagsLine,
-  h('div', { class: 'td-chart' }, traceHead, traceHost, traceFoot),
-  h('div', { class: 'td-chart' }, spectrumHead, spectrumHost, spectrumFoot),
+  h('div', { class: 'td-chart-pair' },
+    h('div', { class: 'td-chart' }, traceHead, traceHost, traceFoot),
+    h('div', { class: 'td-chart' }, spectrumHead, spectrumHost, spectrumFoot)),
   bandCaption, bandBars, metricsLine,
   h('label', { class: 'td-check' }, hideCheck, h('span', { text: 'Hide signal and numbers during protocols' })));
 const traceChart = createCanvas(traceHost, { height: 170, label: 'Channel 1 trace' });
@@ -194,23 +202,45 @@ const abortButton = actionButton({ onClick: () => controller.abortProtocol() });
 const markerNote = h('input', { type: 'text', placeholder: 'What happened? (optional)', 'aria-label': 'Marker note' });
 const markerButton = actionButton({ onClick: () => addMarker() });
 const markerList = h('ul', { class: 'bl-markers' });
-const protocolPanel = panel('03', 'Protocol', null,
+const tabLive = h('span', { class: 'td-tab-live', role: 'status' });
+const guideView = createProtocolGuide({ guide: GUIDE, blockName: humanLabel, goToTab: (id) => mainTabs.select(id) });
+const protocolReason = h('p', { class: 'td-why', role: 'status', hidden: true });
+const protocolLauncher = h('div', { class: 'td-protocol-run' },
   h('div', { class: 'td-field' }, h('span', { text: 'Spoken cues' }), cueButton.el,
     h('label', { class: 'td-check' }, heardCheck, h('span', { text: 'I heard it clearly' })), heardWhy),
   h('div', { class: 'bl-protocol-settings' }, field('Eye-state blocks', blockSelect), field('Audio', audioSelect)),
-  protocolList, blockCard, abortButton.el,
-  h('div', { class: 'td-field' }, h('span', { text: 'Marker (movement, noise, missed cue…)' }), h('div', { class: 'bl-marker-row' }, markerNote, markerButton.el), markerList));
+  protocolList);
+const protocolPanel = panel('03', 'Protocol', null, guideView.el);
+const runPanel = h('aside', { class: 'td-panel td-rail', 'aria-label': 'Run a protocol' },
+  h('header', {}, h('h2', { text: 'Run' })),
+  h('div', { class: 'td-protocol-run' }, blockCard, abortButton.el, protocolLauncher,
+    h('div', { class: 'td-field' }, h('span', { text: 'Marker (movement, noise, missed cue…)' }), h('div', { class: 'bl-marker-row' }, markerNote, markerButton.el), markerList)));
 
 // ---------------------------------------------------------------- 04 results
 const resultsBody = h('div', { class: 'td-body' });
+const resultsKicker = h('span', { class: 'td-kicker' });
 const resultsPanel = h('section', { class: 'td-panel', 'aria-label': 'Results' },
-  h('header', {}, h('h2', {}, h('span', { class: 'td-index', text: '04' }), 'Results'), h('span', { class: 'td-kicker', text: 'Descriptive · this session' })),
+  h('header', {}, h('h2', {}, h('span', { class: 'td-index', text: '04' }), 'Results'), resultsKicker),
   resultsBody);
 const pairHost = h('div');
 let pairChart = null;
 let resultsDirty = true;
+let showExample = false;
 
-root.append(h('main', { class: 'td-main' }, h('div', { class: 'td-grid-3' }, setupPanel, signalPanel, protocolPanel), resultsPanel));
+const mainTabs = createTabs({
+  label: APP.name,
+  hash: true,
+  aside: tabLive,
+  rail: runPanel,
+  railOn: ['signal', 'protocol'],
+  tabs: [
+    { id: 'setup', index: '01', title: 'Setup', panel: setupPanel },
+    { id: 'signal', index: '02', title: 'Signal', panel: signalPanel },
+    { id: 'protocol', index: '03', title: 'Protocol', panel: protocolPanel },
+    { id: 'results', index: '04', title: 'Results', panel: resultsPanel },
+  ],
+});
+root.append(h('main', { class: 'td-main td-main--tabs' }, mainTabs.el));
 
 // ---------------------------------------------------------------- setup wiring
 const currentMontage = () => MONTAGES[ui.montageId];
@@ -241,7 +271,7 @@ function pushSetup() {
 
 function renderMontage() {
   const m = currentMontage();
-  montageFigure.replaceChildren(montageSvg({ leads: m.leads }));
+  montageFigure.replaceChildren(...placementViews(m.leads).map((view) => h('figure', { class: 'td-plate', html: placementSvg(view, m.leads) })));
   leadList.replaceChildren(...m.leads.map((l) => h('div', { class: 'td-lead' }, h('i', { style: `background:${l.cableColor}` }), h('strong', { text: l.pin }), h('span', { text: `${l.siteLabel} · ${l.cable} cable · ${l.role}` }))));
   setText(montageNotes, m.notes);
   setText(routingText, `Wiring checked: ${m.routingCheck}`);
@@ -311,6 +341,7 @@ function addMarker() {
 
 async function startProtocol(entry) {
   ui.refusals.delete(entry.name);
+  guideView.show(entry.name);
   const result = await controller.startProtocol(entry.create(), { requireCueCheck: !!entry.requireCueCheck, requireCleanSignal: !!entry.requireCleanSignal, requireSpeech: !!entry.requireSpeech });
   if (!result.ok) ui.refusals.set(entry.name, `${result.reason} ${result.howTo ?? ''}`.trim());
   else { ui.refusals.clear(); resultsDirty = true; }
@@ -326,7 +357,7 @@ function setExportStatus(text, tone = 'idle') {
 async function exportBundle() {
   if (!controller.session) return;
   const result = await saveBundle({
-    suggestedName: `${simulated ? 'SIMULATED-' : ''}${APP.id}-${controller.session.id}.zip`,
+    suggestedName: `${bundleStem({ ...controller.session, segments: controller.segments })}.zip`,
     assemble: (sink, method) => controller.exportBundle(sink, { method }),
     onStatus: setExportStatus,
   });
@@ -362,12 +393,13 @@ function paint(forceCharts) {
   blockSelect.disabled = audioSelect.disabled = c.protocol.running;
 
   // Protocol buttons are rebuilt only when their content changes, so focus survives renders.
-  const signature = entries.map((e) => `${e.name}:${e.detail}`).join('|');
+  const signature = `${ui.audioCondition}|${entries.map((e) => `${e.name}:${e.detail}`).join('|')}`;
   if (signature !== ui.protocolSignature) {
     ui.protocolSignature = signature;
+    guideView.update(entries);
     const hadFocus = [...protocolButtons.entries()].find(([, b]) => b.button === document.activeElement)?.[0];
     protocolButtons.clear();
-    protocolList.replaceChildren(h('span', { text: 'Protocols' }));
+    protocolList.replaceChildren(h('span', { text: 'Protocols' }), protocolReason);
     for (const entry of entries) {
       const b = actionButton({ className: `td-btn td-protocol-btn${entry.primary ? ' td-btn--primary' : ''}`, onClick: () => startProtocol(entry) });
       b.update({ enabled: false, label: entry.label, content: () => [h('span', { class: 'td-index', text: entry.index }), h('b', { text: entry.label }), h('small', { text: entry.detail })] });
@@ -376,10 +408,11 @@ function paint(forceCharts) {
     }
     if (hadFocus) protocolButtons.get(hadFocus)?.button.focus();
   }
-  for (const [name, b] of protocolButtons) {
-    const s = states.protocols[name];
-    b.update({ ...s, why: s.why ?? ui.refusals.get(name) ?? null });
-  }
+  const reasons = new Map([...protocolButtons.keys()].map((name) => [name, states.protocols[name].why ?? ui.refusals.get(name) ?? null]));
+  const shared = sharedReason([...reasons.values()]);
+  protocolReason.hidden = !shared;
+  setText(protocolReason, shared ?? '');
+  for (const [name, b] of protocolButtons) b.update({ ...states.protocols[name], why: shared ? null : reasons.get(name) });
   cueButton.update(states.testCue);
   heardCheck.disabled = !states.heard.enabled;
   heardCheck.checked = c.cueTest.heard;
@@ -392,6 +425,8 @@ function paint(forceCharts) {
   const card = protocolCard(c);
   const running = card.state === 'running';
   blockCard.dataset.state = card.state;
+  protocolLauncher.hidden = running;
+  setText(tabLive, running ? `${card.title} · ${card.remaining} s` : '');
   setText(blockTitle, card.title);
   setText(blockInstruction, card.instruction);
   blockCountdown.hidden = blockProgress.hidden = !running;
@@ -401,6 +436,7 @@ function paint(forceCharts) {
 
   const now = performance.now();
   if (forceCharts || now - lastCharts > 240) { lastCharts = now; paintSignal(); }
+  if (c.protocol.running && showExample) { showExample = false; renderResults(); }
   if (resultsDirty && !c.protocol.running) { resultsDirty = false; renderResults(); }
 }
 
@@ -424,7 +460,7 @@ function paintSignal() {
   traceChart.setLabel(`Channel 1 ${raw ? 'raw' : 'filtered'} trace in ${traceUnit}`);
   traceHead.replaceChildren(h('strong', { text: raw ? 'Raw signal' : 'Filtered trace' }), h('span', { text: raw ? 'last 4.1 s' : 'last 2 s' }));
   const notchText = ui.notch === '50h' ? '50/100/150/200 Hz notches' : ui.notch === '50' ? '50 Hz notch' : 'no notch';
-  setText(traceFoot, raw ? 'Unaltered ADC samples. Clipping and mains pickup stay visible here.' : `${chords ? 'Chords-Web coefficients (≈0.1–90 Hz)' : 'Causal 0.5–45 Hz Butterworth'} · ${notchText} · restarts after any gap.`);
+  setText(traceFoot, raw ? 'Unaltered ADC samples. Clipping and mains pickup stay visible here.' : `${chords ? 'Order-2 Butterworth ≈0.1–90 Hz' : 'Causal 0.5–45 Hz Butterworth'} · ${notchText} · restarts after any gap.`);
 
   if (raw) {
     drawSpectrum(spectrumChart, { values: latest?.psd, kind: 'psd', maxHz: ui.spectrumMax, unit: 'PSD (dB re 1 count²/Hz)', status, simulated });
@@ -461,10 +497,16 @@ function paintSignal() {
 
 function renderResults() {
   const c = controller;
+  const setExample = (on) => { showExample = on; renderResults(); };
+  setText(resultsKicker, showExample ? 'Example · not a recording' : 'Descriptive · this session');
+  if (showExample) {
+    resultsBody.replaceChildren(...exampleView(BERGER_EXAMPLE, { onHide: () => setExample(false) }));
+    return;
+  }
   const blocks = c.protocol.blocks;
   const eyeProtocols = [...new Set(blocks.filter((b) => b.label.startsWith('eyes_')).map((b) => b.protocol_id))];
   if (!eyeProtocols.length) {
-    resultsBody.replaceChildren(h('p', { class: 'td-muted', text: 'Paired results appear after an eyes-open / eyes-closed protocol.' }));
+    resultsBody.replaceChildren(h('p', { class: 'td-muted', text: 'Paired results appear after an eyes-open / eyes-closed protocol.' }), exampleButton(() => setExample(true)));
     return;
   }
   const focused = document.activeElement?.dataset?.block;
@@ -507,6 +549,7 @@ function renderResults() {
       drawPairs(pairChart, { pairs: res.pairs.map((p) => ({ pair: p.pair, open: p.open?.alpha ?? null, closed: p.closed?.alpha ?? null, status: p.status, ratio: p.ratio })), simulated });
     }
   });
+  if (simulated && !c.protocol.running) nodes.push(exampleButton(() => setExample(true)));
   resultsBody.replaceChildren(...nodes);
   if (focused) resultsBody.querySelector(`select[data-block="${focused}"]`)?.focus();
 }

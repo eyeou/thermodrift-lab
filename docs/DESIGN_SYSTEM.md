@@ -5,8 +5,9 @@ Source of truth: `src/design/tokens.json`. `npm run tokens` generates `tokens.cs
 ## Identity
 
 - **Logo**: `brand/thermodrift-logo.png`, aspect 1172 : 227, never recoloured or stretched; 176 px wide in app headers.
+- **Lab mark**: the logo, a brass diamond, then LAB in drawn inline capitals (`src/ui/components/lab-mark.js`), with 24 px either side of the diamond. App headers read `Thermodrift ◆ LAB ◆ App name`.
 - **Brand red `#B61E20`**: fills and labels with white text, primary buttons. Never text or thin lines on navy (contrast 2.97).
-- **Rose `#E5606E`**: eyes-closed data and key numbers. **Periwinkle `#6F86F2`**: eyes-open data, traces and links. This pair passes the dark-mode palette checks on the panel colour (lightness band, chroma, colour-blind separation ΔE 20); the earlier pastels `#FA8B94` / `#B6C2FF` were too light and read as grey. The website's charts use the same pair.
+- **Rose `#E5606E`**: eyes-closed data and key numbers. **Periwinkle `#6F86F2`**: eyes-open data, traces and links. The website's charts use the same pair.
 - Navy surfaces (`#070A22` base), square corners, 8 px rhythm, hard black shadows on titles.
 - Type: Georgia for titles and story, system sans for interface, tabular numerals for numbers, monospace for ids and hashes. No font files are bundled.
 
@@ -23,14 +24,45 @@ Thermodrift's brand is slightly Art Deco and slightly Parisian. That taste lives
 | Quotation | Questions in guillemets « ». |
 | Ornament | One sunburst per page at most (hero), a diamond-and-fan rule between parts. Drawn in SVG, still under reduced motion. |
 | Illustrations | Labelled "Illustration" and never carry measured values. |
+| Schematics | Georgia labels, italic for names on the figure, a hard black shadow on large ones, and the key word in a tight red block. Labels never sit on a wire. Data charts keep sans labels. |
 
 ## Rules for instruments
 
 1. **A blocked control says why**, beside itself, linked with `aria-describedby`.
 2. **Status by shape, not only colour**: check (ready), dot (live), triangle (warning), cross (error), dashed ring (stale), hatch (simulated), ring (idle).
-3. **Simulated is unmistakable**: hatched banner, purple source chip, `SIMULATED-` file names, watermark on every chart.
-4. **Live numbers hide during a protocol** by default, so the operator is not steered by them.
+3. **Simulated is unmistakable**: hatched purple source chip in the header, `SIMULATED-` file names, watermark on every chart, and a plain note on a saved simulated session.
+4. **Dropdown arrows sit inside the control**: 16 px from the right border, in muted ink, with room reserved so text never runs under them.
+5. **Live numbers can hide during a protocol**, so the operator is not steered by them: on by default in Berger Effect, off by default in Breathwork.
 5. **Prompted labels** are named as prompts (“Pair 2 · eyes closed”), never as observed states.
+
+## Tabs
+
+An instrument page is tabs: Setup, Signal, Protocol, Results, plus Recordings in Breathwork. The tab bar stays in view and shows the running block.
+
+**Run panel.** Signal and Protocol share a panel at their side: current block, protocol launchers and markers. An operator about to start a protocol sees the signal and the launcher together. The panel is sticky, and stacks under the tab below 1100 px.
+
+**Example results.** Results can show an example before any run, so a visitor sees the charts and the reading before having a board. Figures are round, inspired by real data and smoothed. A dashed note names it, every chart carries an EXAMPLE mark, and the panel kicker reads “Example · not a recording”. An example never reaches a session, the store or an export, closes when a protocol starts, and is not offered next to results from hardware.
+
+## Anatomical illustration
+
+Placement plates are instructions first: the anatomy says where an electrode goes and nothing else. One source, `src/ui/components/placement.js`, draws them as plain SVG for the apps, the README and the tests.
+
+| Topic | Rule |
+|---|---|
+| Figure | A neutral, generic adult with natural proportions, in a calm pose: about 7.5 heads tall, slightly square shoulders, elbow at the waist. Restrained musculature; no likeness of a real person. |
+| Face | Fine features. Eyes at half the head height, jaw angle at mouth level, a fine and slightly square lower face, a short neck-to-jaw shade. Short hair as a soft tone with a faint line along its edge, low on the forehead and coming down the temples to the ears, so the skull never reads as a bare dome. |
+| Definition of form | The contour carries the jaw and cheek, helped by soft tonal planes. No interior jaw or cheek line on the front view: it reads as a wrinkle. |
+| Definition | Draw a structure when it helps someone find a site: collarbone, ribs, neck muscle, shoulder blade. Leave out muscle separation that locates nothing. |
+| Line hierarchy | Outer contour in ink at 82%, 1.6 px. Eyes, nose and mouth at about 65%, body detail at 30% or less, all at 1 px or finer. Body fill `#0E1433` on `#070A22`; shade and hair are `#070A22` at 50% or less. |
+| Muscle in use | The recorded muscle takes a sand tint with a thin sand edge. Unused muscles stay hairlines. |
+| Views | Same person, proportions and stroke on every view. Front: the person's right on picture-left. Back and top: the person's left on picture-left. Side: seen from the left. The back view has no chin or facial marks. |
+| Side view | The skull is the sphere the 10–20 sites are computed on. Draw the face, jaw, neck and trunk around it; never reshape it above the nasion–inion line. |
+| Markers | Radius 8, filled with the cable colour. Gold ring: cup with paste. White ring and centre dot: patch with a snap. Two leads on one site: stacked, one label. Markers sit above all anatomy. |
+| Labels | Board pin first, bold; site below it, muted. Labels stay in the side columns, off the figure, with a 1 px leader to the marker. |
+| Limits | Every figure carries “Illustration, not to scale. Board pins are authoritative; cable colours vary.” Plates never carry measured values. |
+| Accessibility | Each plate has a title and label listing every pin and site. Pins are named in text, so identity never depends on colour. Plates stay at least 400 px wide. For phones, the compact plate keeps every marker position, drops the site text, enlarges pins and markers, and sits with a table listing each pin and site. |
+
+`tests/placement.test.js` freezes every marker position, colour and label against `tests/helpers/placement-golden.json`, so redrawing anatomy cannot move a site unnoticed. After changing a drawing, run `npm run figures` and review the plates. Update the frozen file (`UPDATE_PLACEMENT_GOLDEN=1 npm test`) only for a reviewed change of site or label.
 
 ## Chart grammar
 

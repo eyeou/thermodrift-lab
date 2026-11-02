@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for looking. Issues with hardware reports, failed sessions or confusing screens are as useful as code.
+Issues with hardware reports, failed sessions or confusing screens are as useful as code.
 
 ## Ground rules
 
@@ -18,10 +18,11 @@ Thanks for looking. Issues with hardware reports, failed sessions or confusing s
 npm run serve   # http://127.0.0.1:8072/apps/
 npm test        # node:test, synthetic fixtures only
 npm run tokens  # regenerate design outputs after editing src/design/tokens.json
-npm run check   # tokens in sync + tests + privacy scan (what CI runs)
+npm run figures # regenerate the electrode figures after editing a montage or the drawings
+npm run check   # tokens and figures in sync + tests + privacy scan (what CI runs)
 ```
 
-Real recordings can be checked locally with `npm run replay:berger -- --source <dir> --stem <stem>`; the tool reads them in place and never copies them.
+A Berger v3 file set can be replayed locally with `npm run replay:berger -- --source <dir> --stem <stem>`; the tool reads it in place and never copies it.
 
 ## Pull requests
 

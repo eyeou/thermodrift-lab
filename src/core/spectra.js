@@ -2,7 +2,7 @@
  * Spectral estimators. Two different quantities live here and must never be confused:
  *  - welchPsd(): power spectral density, one-sided, density scaling, units² / Hz.
  *  - magnitudeSpectrum(): FFT magnitude (2/N scaling), a display quantity, NOT a PSD.
- * Arithmetic order matches Berger Lab v3 (see tests/replay for the bit-level check).
+ * The arithmetic order is frozen with the analysis plan (tools/replay-berger-v3.mjs checks it to the bit).
  */
 import { fftInPlace } from './fft.js';
 
@@ -38,7 +38,7 @@ export function periodogram(x, fs, n) {
 
 /**
  * Welch PSD: `segment`-point Hann segments with 50% overlap, per-segment mean removal,
- * averaged in segment order. v3 uses 2048 samples → three 1024-point segments (0, 512, 1024).
+ * averaged in segment order. The plan uses 2048 samples → three 1024-point segments (0, 512, 1024).
  */
 export function welchPsd(x, { fs = 500, segment = 1024, step = segment / 2 } = {}) {
   if (x.length < 2 * segment) throw new Error(`Need ${2 * segment} contiguous samples`);

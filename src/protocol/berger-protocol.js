@@ -1,6 +1,6 @@
 /**
- * Berger Lab protocol definitions. Labels, durations and spoken cue text are unchanged from
- * Berger-Lab-3.0.1 so that new recordings remain comparable with the 29 October 2026 run.
+ * Berger Effect protocol definitions. Labels, durations and spoken cue text are frozen, so that
+ * recordings stay comparable.
  */
 
 export const BERGER_PROTOCOL_VERSION = 'berger-protocol-3';

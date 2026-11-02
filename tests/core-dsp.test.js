@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { decodePacket, encodePacket, UnsupportedPacketError, channelsValid } from '../src/core/packets.js';
 import { CounterTracker, counterDelta } from '../src/core/continuity.js';
 import { SosCascade, cascadeGain, iirNotch } from '../src/core/biquad.js';
-import { EEG_BANDPASS_0_5_45, CHORDS_SNAPSHOT_NOTCH_50, HARMONIC_NOTCHES, chainSpec } from '../src/core/filters.js';
+import { EEG_BANDPASS_0_5_45, BUTTER2_BANDSTOP_48_52, HARMONIC_NOTCHES, chainSpec } from '../src/core/filters.js';
 import { welchPsd, bandPower, magnitudeSpectrum, periodogram } from '../src/core/spectra.js';
 import { windowMetrics, assessRawWindow, REASONS, WARNINGS } from '../src/core/quality.js';
 import { createAnalysisFilter } from '../src/analysis/berger-v3.js';
@@ -59,7 +59,7 @@ test('counters: wrap, gaps, duplicates, restart', () => {
 });
 
 test('filters: 0.5–45 Hz band-pass + notches — passband, notch depth, coefficients', () => {
-  const sections = [...EEG_BANDPASS_0_5_45, ...CHORDS_SNAPSHOT_NOTCH_50, ...HARMONIC_NOTCHES];
+  const sections = [...EEG_BANDPASS_0_5_45, ...BUTTER2_BANDSTOP_48_52, ...HARMONIC_NOTCHES];
   assert.ok(Math.abs(cascadeGain(sections, 10, 500) - 1) < 0.05, '10 Hz in passband');
   for (const f of [50, 100, 150, 200]) assert.ok(cascadeGain(sections, f, 500) < 0.005, `${f} Hz rejected`);
   assert.ok(cascadeGain(EEG_BANDPASS_0_5_45, 0.05, 500) < 0.02, 'DC/slow drift attenuated');

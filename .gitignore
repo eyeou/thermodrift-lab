@@ -13,9 +13,14 @@ sessions/
 *-raw.csv
 *-windows.csv
 *-metadata.json
+raw.csv
+windows.csv
+metadata.json
+manifest.json
 !fixtures/synthetic/**
 
 # Local tooling
+*.local.json
 .DS_Store
 .vscode/
 .idea/

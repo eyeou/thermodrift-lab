@@ -82,6 +82,8 @@ function redirect(res, location) {
 
 server.listen(PORT, HOST, () => {
   console.log(`Thermodrift Lab: http://${HOST}:${PORT}/apps/`);
-  console.log(`Berger Lab (hardware):  http://${HOST}:${PORT}/apps/berger/`);
-  console.log(`Berger Lab (simulated): http://${HOST}:${PORT}/apps/berger/?source=simulated`);
+  console.log(`Berger Effect (hardware):  http://${HOST}:${PORT}/apps/berger/`);
+  console.log(`Berger Effect (simulated): http://${HOST}:${PORT}/apps/berger/?source=simulated`);
+  console.log(`Breathwork (hardware):  http://${HOST}:${PORT}/apps/breathwork/`);
+  console.log(`Breathwork (simulated): http://${HOST}:${PORT}/apps/breathwork/?source=simulated`);
 });

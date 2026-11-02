@@ -1,5 +1,5 @@
 /**
- * Window metrics and raw-quality flags (Berger Lab v3 definitions, unchanged).
+ * Window metrics and raw-quality flags, as defined by the frozen analysis plan.
  * Flags are heuristics: they are not an impedance measurement and do not separate EEG from
  * eye, muscle or line activity.
  */
@@ -11,7 +11,7 @@ export const RAIL_HIGH = 4090;
 
 export const isNearRail = (v) => v <= RAIL_LOW || v >= RAIL_HIGH;
 
-/** Reason strings are part of the v3 export format; keep them stable. */
+/** Reason strings are part of the export format; keep them stable. */
 export const REASONS = Object.freeze({
   clipping: 'ADC clipping',
   sourceClipping: 'Source ADC clipping',

@@ -1,8 +1,8 @@
 /**
  * Live display processor (display only; never feeds the primary analysis).
  * Causal chain → 1024-sample buffer → FFT magnitude every 50 samples → moving mean of the last
- * 20 magnitude updates (the mean divides by 20 from the first update, so the first second
- * under-reads: a documented display transient). Band shares use squared magnitudes.
+ * 20 magnitude updates (the mean divides by 20 from the first update, so the first 2 s of updates
+ * under-read). Band shares use squared magnitudes.
  */
 import { SosCascade } from './biquad.js';
 import { chainSpec, describeChain } from './filters.js';

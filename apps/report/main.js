@@ -1,19 +1,22 @@
 /**
  * Session report. Opens a session saved in this browser (?session=<id>), an exported bundle
- * (.zip) or a Berger Lab v3 file set. Never connects to hardware and never plays a cue.
+ * (.zip) or a Berger v3 file set. Never connects to hardware and never plays a cue.
  * Results are recomputed from the stored windows with the same analysis code as the live app.
  */
+import { appName, brand } from '../../src/ui/components/lab-mark.js';
 import { h, setText, statusIcon } from '../../src/ui/dom.js';
 import { createCanvas, drawPairs, drawTimeline } from '../../src/ui/charts/canvas.js';
 import { montageSvg } from '../../src/ui/components/montage.js';
 import { openIdbStore } from '../../src/session/store-idb.js';
 import { loadFromStore, loadFromBundle, loadLegacyFiles, appendReviewAnnotation } from '../../src/session/load.js';
 import { exportSessionBundle } from '../../src/session/bundle.js';
+import { bundleStem, flagStoredRecording, lengthText, recordingSummaries } from '../../src/session/recordings.js';
 import { effectiveAdherence, confirmableEyeBlocks } from '../../src/analysis/adherence.js';
-import { pairedResults, blockSummary, BERGER_V3, analysisFilterDescription } from '../../src/analysis/berger-v3.js';
+import { blockSummary, BERGER_V3, analysisFilterDescription } from '../../src/analysis/berger-v3.js';
 import { humanLabel } from '../../src/lab/viewmodel.js';
 import { saveBundle } from '../../src/ui/save-bundle.js';
 import { instrumentFor } from '../registry.js';
+import { eyeProtocolIds, eyeResults, processingFor, recordedResultFor } from './review.js';
 
 const root = document.getElementById('app');
 const fmt = (v, d = 2) => (Number.isFinite(v) ? v.toFixed(d) : '—');
@@ -29,8 +32,8 @@ let localAnnotations = []; // file views only: kept in this page, not saved anyw
 // ---------------------------------------------------------------- frame
 const titleLine = h('span', { class: 'td-caption td-mono', text: 'No session open' });
 root.append(h('header', { class: 'td-header' },
-  h('a', { href: '../', 'aria-label': 'Thermodrift Lab home' }, h('img', { class: 'td-logo', src: '../../brand/thermodrift-logo.png', width: 1172, height: 227, alt: 'Thermodrift' })),
-  h('div', { class: 'td-app-name' }, h('strong', { text: 'Session report' }), h('span', { class: 'td-caption', text: 'Review only · no hardware' })),
+  brand({ href: '../', logo: '../../brand/thermodrift-logo.png' }),
+  appName('Session report', 'Review only · no hardware'),
   h('span', { class: 'td-spacer' }),
   titleLine));
 const banner = h('div', { class: 'td-simulated-banner', role: 'note', hidden: true }, 'SIMULATED — synthetic test pattern, not a recording and not physiology.');
@@ -105,13 +108,13 @@ function show(next) {
 }
 
 function render() {
-  const eyeProtocols = [...new Set(view.blocks.filter((b) => b.label.startsWith('eyes_')).map((b) => b.protocol_id))];
-  const results = eyeProtocols.map((id) => ({ id, protocol: view.protocols.find((p) => p.id === id), res: pairedResults({ blocks: view.blocks, windows: view.windows, protocolId: id, adherenceOf }) }));
+  const channel = app.analysisChannel(view);
+  const results = eyeResults(view, channel, adherenceOf);
   main.replaceChildren(
-    summarySection(results),
+    summarySection(results, channel),
     ...results.map((r) => resultsSection(r)),
-    blocksSection(),
-    h('div', { class: 'rp-columns' }, setupSection(), processingSection()),
+    blocksSection(channel),
+    h('div', { class: 'rp-columns' }, setupSection(), processingSection(channel)),
     h('div', { class: 'rp-columns' }, integritySection(), eventsSection()),
     limitationsSection(),
   );
@@ -123,15 +126,18 @@ function panel(index, title, kicker, ...body) {
     h('div', { class: 'td-body' }, ...body));
 }
 
-function summarySection(results) {
+function summarySection(results, channel) {
   const montage = app.montages[view.montage];
   const duration = (view.segments ?? []).reduce((s, g) => s + Math.max(0, (g.end_arrival_ms ?? g.start_arrival_ms) - g.start_arrival_ms), 0);
   const metric = (label, value, small = false) => h('div', { class: `td-metric${small ? ' rp-metric-small' : ''}` }, h('span', { text: label }), h('strong', { text: String(value) }));
   const latest = results.at(-1)?.res;
   const lead = latest?.eligible_count
     ? [h('strong', { text: `${latest.higher_closed_count} of ${latest.eligible_count}` }), ' eligible pairs have higher alpha with eyes closed; median closed / open ', h('strong', { text: `${fmt(latest.median_ratio)}×` }), '.']
-    : results.length ? 'No eligible pair yet: review adherence below.' : 'No eyes-open / eyes-closed protocol in this session.';
-  const origin = { browser: 'Saved in this browser', bundle: 'Exported bundle', 'legacy-v3': 'Berger Lab v3 files' }[view.origin];
+    : results.length ? 'No eligible pair yet: review adherence below.'
+    : channel === null && eyeProtocolIds(view).length ? 'This session does not say which channel holds the EEG, so no alpha result is shown.'
+    : app.results === 'eye-pairs' ? 'No eyes-open / eyes-closed protocol in this session.'
+    : `${app.name} session: blocks, markers and integrity below; the export holds every channel.`;
+  const origin = { browser: 'Saved in this browser', bundle: 'Exported bundle', 'legacy-v3': 'Berger v3 files' }[view.origin];
   return panel('01', 'Summary', origin,
     h('p', { class: 'rp-lead' }, lead),
     h('div', { class: 'td-metrics' },
@@ -140,7 +146,7 @@ function summarySection(results) {
       metric('Recorded', duration ? `${Math.round(duration / 1000)} s` : '—'),
       metric('Samples', view.sample_count != null ? view.sample_count.toLocaleString('en-GB') : '—'),
       metric('Missing', view.health?.gaps ?? '—'),
-      metric('Montage', montage?.channelNames?.[0] ?? view.montage, true),
+      metric('Montage', montage?.summary ?? montage?.channelNames?.[0] ?? view.montage, true),
       metric('App', `${view.app} ${view.app_version}`, true),
       metric('Analysis plan', view.analysis_plan, true)),
     view.close_reason && view.status !== 'closed' ? h('p', { class: 'rp-note', dataset: { tone: 'warning' }, text: view.close_reason }) : null);
@@ -171,7 +177,7 @@ function resultsSection({ id, protocol, res }) {
   const name = protocol?.name === 'berger-demo' ? 'Demo run (simulated)' : 'Berger test';
   const title = `${name} #${id}${protocol?.audio_condition === 'external_audio' ? ' · external audio, exploratory' : ''}`;
   const pairHost = h('div'), timelineHost = h('div');
-  const recorded = view.recorded_results?.find((r) => r.protocol_id === id);
+  const recorded = recordedResultFor(view, id);
   const confirm = h('button', { class: 'td-btn', type: 'button', disabled: !canEdit }, 'I followed every eye-state instruction not excluded');
   confirm.onclick = () => annotate(confirmableEyeBlocks(blocks, annotations()), 'as_instructed');
   const section = panel('02', title, protocol?.end_reason ? `${protocol.end_reason}` : null,
@@ -182,7 +188,7 @@ function resultsSection({ id, protocol, res }) {
     h('div', { class: 'rp-export' }, confirm,
       !view.editable && view.origin === 'browser' ? h('p', { text: 'Still recording in another tab: review it there.' }) : null,
       view.origin !== 'browser' ? h('p', { text: 'File view: adherence changes stay on this page.' }) : null),
-    h('p', { class: 'rp-note' }, 'α = median absolute 8–13 Hz power of clean windows after the fixed 0.5–45 Hz filter and notches (count-equivalent², not µV). A pair counts when both blocks are marked followed and each has ≥2 clean windows. Eye states are prompted, not measured.'),
+    h('p', { class: 'rp-note' }, `α = median absolute 8–13 Hz power of clean windows after the fixed 0.5–45 Hz filter and notches (count-equivalent², not µV). A pair counts when both blocks are marked followed and each has ≥2 clean windows. Eye states are prompted, not measured.${res.channel ? ` Read from channel ${res.channel + 1}.` : ''}`),
     recorded ? h('p', { class: 'rp-note', text: `At export: ${recorded.eligible_count} eligible pair(s)${recorded.eligible_count ? `, median ${fmt(recorded.median_ratio)}×` : ''}, with the adherence recorded then.` }) : null,
     pairHost,
     h('div', { class: 'td-chart-head' }, h('strong', { text: 'Timeline' }), h('span', { text: 'one dot per 4.1 s analysis window' })),
@@ -192,7 +198,7 @@ function resultsSection({ id, protocol, res }) {
       pairs: res.pairs.map((p) => ({ pair: p.pair, open: p.open?.alpha ?? null, closed: p.closed?.alpha ?? null, status: p.status, ratio: p.ratio })), simulated: view.simulated,
     });
     const origin = Math.min(...blocks.map((b) => b.start_arrival_ms));
-    const windows = view.windows.filter((w) => w.protocol_id === id && w.channel === 0).map((w) => ({
+    const windows = view.windows.filter((w) => w.protocol_id === id && w.channel === res.channel).map((w) => ({
       mid_ms: w.arrival_ms - (BERGER_V3.window_samples / BERGER_V3.fs_nominal) * 500,
       value: w.filtered_alpha,
       state: w.phase?.startsWith('eyes_closed') ? 'closed' : w.phase?.startsWith('eyes_open') ? 'open' : 'other',
@@ -223,23 +229,30 @@ async function annotate(blocks, value, focusBlock) {
   if (focusBlock) main.querySelector(`select[data-block="${focusBlock}"]`)?.focus();
 }
 
-function blocksSection() {
+function blocksSection(channel) {
   const rows = view.blocks.map((b) => {
-    const s = blockSummary(b, view.windows, 0, adherenceOf(b));
+    const adherence = adherenceOf(b);
+    const s = channel === null ? null : blockSummary(b, view.windows, channel, adherence);
     const cue = Number.isFinite(b.speech_end_arrival_ms) ? seconds(b.speech_end_arrival_ms - b.start_arrival_ms) : b.speech_requested === false ? 'not spoken' : '—';
     return h('tr', {},
       h('td', { class: 'td-num', text: `${b.protocol_id}.${b.id}` }),
       h('th', { scope: 'row', text: humanLabel(b.label) }),
       h('td', { class: 'td-num', text: seconds((b.end_arrival_ms ?? b.start_arrival_ms) - b.start_arrival_ms) }),
       h('td', { class: 'td-num', text: cue }),
-      h('td', { class: 'td-num', text: `${s.valid} / ${s.valid + s.rejected}` }),
-      h('td', { text: { as_instructed: 'followed', exclude: 'excluded', unconfirmed: 'not confirmed' }[s.adherence] ?? s.adherence }),
+      h('td', { class: 'td-num', text: s ? `${s.valid} / ${s.valid + s.rejected}` : '—' }),
+      h('td', { text: { as_instructed: 'followed', exclude: 'excluded', unconfirmed: 'not confirmed' }[adherence] ?? adherence }),
       h('td', { text: [b.complete ? null : 'incomplete', ...(b.deviations ?? [])].filter(Boolean).join(' · ') || '—' }));
   });
-  return panel('03', 'Blocks', 'as prompted',
+  return panel('03', 'Blocks', channel ? `as prompted · windows of channel ${channel + 1}` : 'as prompted',
     rows.length ? h('div', { class: 'td-scroll-x' }, h('table', { class: 'td-table' },
       h('thead', {}, h('tr', {}, ...['#', 'Block', 'Length', 'Cue ended after', 'Clean / counted windows', 'Adherence', 'Notes'].map((t) => h('th', { scope: 'col', text: t })))),
       h('tbody', {}, ...rows))) : h('p', { class: 'td-muted', text: 'No protocol blocks in this session.' }));
+}
+
+/** What actually ran: the audio is chosen per run, so the setup value alone can be out of date. */
+function audioConditions(setup) {
+  const ran = [...new Set(view.protocols.map((p) => p.audio_condition).filter(Boolean))];
+  return (ran.length ? ran : [setup.audio_condition]).map((c) => ({ cues_only: 'spoken cues only', external_audio: 'external audio (exploratory)' })[c] ?? c);
 }
 
 function setupSection() {
@@ -255,21 +268,23 @@ function setupSection() {
       h('dt', { text: 'Checks' }), h('dd', { text: confirmations }),
       h('dt', { text: 'Placement notes' }), h('dd', { text: view.placement_notes || '—' }),
       h('dt', { text: 'Prediction' }), h('dd', { text: view.hypothesis || '—' }),
-      h('dt', { text: 'Audio' }), h('dd', { text: [{ cues_only: 'spoken cues only', external_audio: 'external audio (exploratory)' }[s.audio_condition] ?? s.audio_condition, s.audio_notes].filter(Boolean).join(' · ') || '—' }),
+      h('dt', { text: 'Audio' }), h('dd', { text: [...audioConditions(s), s.audio_notes].filter(Boolean).join(' · ') || '—' }),
       h('dt', { text: 'Cues' }), h('dd', { text: s.cue_mode ?? '—' })));
 }
 
-function processingSection() {
+function processingSection(channel) {
   const filter = view.processing?.analysis?.filter ?? analysisFilterDescription();
   const notches = [filter.notch_sos?.length ? 50 : null, ...(filter.harmonic_notches_hz ?? [])].filter(Boolean);
-  return panel('05', 'Processing', BERGER_V3.plan_id,
+  const { plan, metric, eligibility, channelName } = processingFor(view, app, channel);
+  return panel('05', 'Processing', plan,
     h('dl', { class: 'rp-dl' },
-      h('dt', { text: 'Primary metric' }), h('dd', { text: BERGER_V3.primary_metric }),
+      h('dt', { text: 'Primary metric' }), h('dd', { text: metric }),
+      channelName ? h('dt', { text: 'Channel' }) : null, channelName ? h('dd', { text: channelName }) : null,
       h('dt', { text: 'Filter' }), h('dd', { text: `${filter.note ?? 'Causal 0.5–45 Hz Butterworth.'}${notches.length ? ` Notches at ${notches.join(', ')} Hz.` : ''}` }),
       h('dt', { text: 'Spectrum' }), h('dd', { text: BERGER_V3.welch }),
       h('dt', { text: 'Window rules' }), h('dd', { text: `${BERGER_V3.window_samples} samples; inside the block; ≥${BERGER_V3.transition_exclusion_s} s after the cue ended; ${BERGER_V3.filter_warmup_and_rail_guard_s} s guard after filter start or a raw rail.` }),
       h('dt', { text: 'Units' }), h('dd', { text: BERGER_V3.units }),
-      h('dt', { text: 'Eligibility' }), h('dd', { text: BERGER_V3.eligibility })));
+      h('dt', { text: 'Eligibility' }), h('dd', { text: eligibility })));
 }
 
 function integritySection() {
@@ -278,14 +293,31 @@ function integritySection() {
   const files = view.files?.length ? h('details', {}, h('summary', { text: 'File hashes (SHA-256)' }),
     h('ul', { class: 'rp-checks' }, ...view.files.map((f) => h('li', {}, h('span'), h('span', { class: 'td-mono', text: `${f.name} · ${f.sha256}` }), h('small', { text: `${(f.bytes / 1e6).toFixed(2)} MB` }))))) : null;
   const exportStatus = h('p', { role: 'status' });
-  const exportButton = view.origin === 'browser' ? h('button', { class: 'td-btn', type: 'button' }, 'Export bundle (.zip)') : null;
-  if (exportButton) exportButton.onclick = () => saveBundle({
-    suggestedName: `${view.simulated ? 'SIMULATED-' : ''}${view.app}-${view.id}.zip`,
-    assemble: (sink, method) => exportSessionBundle({ store, sessionId: view.id, describe: (ctx) => app.describe(ctx), windowChannelLabel: (ch) => app.channelLabel(app.montages[view.montage], ch), sink, exportInfo: { method, from: 'report' } }),
+  const fromBrowser = view.origin === 'browser';
+  const exportOne = (segmentId) => saveBundle({
+    suggestedName: `${bundleStem(view, view.segments.find((s) => s.id === segmentId) ?? null)}.zip`,
+    assemble: (sink, method) => exportSessionBundle({ store, sessionId: view.id, segmentId, describe: (ctx) => app.describe(ctx), windowChannelLabel: (ch) => app.channelLabel(app.montages[view.montage], ch), sink, exportInfo: { method, from: 'report' } }),
     onStatus: (text, t = 'idle') => { exportStatus.dataset.tone = t; setText(exportStatus, text); },
   });
+  const exportButton = fromBrowser ? h('button', { class: 'td-btn', type: 'button', onclick: () => exportOne(null) }, view.segments.length > 1 ? `Export all ${view.segments.length} recordings in one file` : 'Export bundle (.zip)') : null;
+  const flagOne = async (segmentId, flag) => {
+    try { await flagStoredRecording(store, view.id, segmentId, flag); openFromStore(view.id); }
+    catch (error) { exportStatus.dataset.tone = 'error'; setText(exportStatus, error.message); }
+  };
+  const recordings = fromBrowser ? recordingSummaries(view) : [];
+  const localClock = (utc) => (utc ? new Date(utc).toLocaleTimeString('en-GB') : '—');
+  const recordingList = recordings.length ? h('div', { class: 'td-scroll-x' }, h('table', { class: 'td-table' },
+    h('thead', {}, h('tr', {}, ...['Recording', 'Time', 'Length', 'Ended', ''].map((t) => h('th', { scope: 'col', text: t })))),
+    h('tbody', {}, ...recordings.map((r) => h('tr', {},
+      h('td', { class: 'td-num', text: `${r.id}${r.flag === 'test' ? ' · TEST' : ''}` }),
+      h('td', { class: 'td-num', text: `${localClock(r.start_utc)} → ${localClock(r.end_utc)}` }),
+      h('td', { class: 'td-num', text: lengthText(r.seconds) }),
+      h('td', { text: r.ended }),
+      h('td', {},
+        recordings.length > 1 ? h('button', { class: 'td-btn', type: 'button', disabled: r.samples === 0, onclick: () => exportOne(r.id) }, 'Export') : null,
+        view.status === 'recording' ? null : h('button', { class: 'td-btn', type: 'button', onclick: () => flagOne(r.id, r.flag === 'test' ? null : 'test') }, r.flag === 'test' ? 'Remove test flag' : 'Flag as test'))))))) : null;
   return panel('06', 'Integrity', view.integrity.ok ? 'checks pass' : 'see below',
-    h('ul', { class: 'rp-checks' }, ...items), files,
+    h('ul', { class: 'rp-checks' }, ...items), files, recordingList,
     exportButton ? h('div', { class: 'rp-export' }, exportButton, exportStatus) : null);
 }
 
@@ -310,4 +342,4 @@ function limitationsSection() {
 const requested = new URLSearchParams(location.search).get('session');
 await refreshSessionList(requested);
 if (requested) openFromStore(requested);
-else message('Choose a session saved in this browser, or open an exported bundle (.zip) or a Berger Lab v3 file set (metadata.json + windows.csv).');
+else message('Choose a session saved in this browser, or open an exported bundle (.zip) or a Berger v3 file set (metadata.json + windows.csv).');

@@ -2,7 +2,7 @@
 
 A protocol is a timed list of blocks. Each block has a label (the **prompt**), a duration, an on-screen instruction and an optional spoken cue. Labels are recorded on every raw row as they were prompted and never edited.
 
-## Berger Lab protocols (`berger-protocol-3`, unchanged from 3.0.1)
+## Berger Effect protocols (`berger-protocol-3`, frozen)
 
 | Protocol | Blocks | Duration |
 |---|---|---|
@@ -16,9 +16,36 @@ A protocol is a timed list of blocks. Each block has a label (the **prompt**), a
 - Audio condition: `cues_only` (primary) or `external_audio` (exploratory, never pooled with the primary).
 - The long test stops acquisition when it ends.
 
+## Breathwork protocols (`breath-check-2`)
+
+| Protocol | Blocks | Duration |
+|---|---|---|
+| Signal check | `still_open` 45 s → `still_closed` 45 s → `slow_breathing` 60 s → `shrugs` 15 s → `deep_breaths` 30 s → `exhale_hold` 15 s → `recovery` 30 s | 4 min |
+| Rest before, rest after | `rest_*_open` 60 s → `rest_*_closed` 120 s | 3 min each |
+| Flow demo (simulator only) | The signal-check blocks at 6 s each, silent | 42 s |
+
+The guided session runs between the two rests, outside any protocol, with acquisition on. The operator marks it with keys while acquiring: V video start, B breathing, H hold, R recovery breath, M marker.
+
+## Session conditions
+
+The Breathwork app's Setup records one condition per session. Its code goes in the file name and the metadata; `unset` adds nothing to the file name.
+
+| Code | Condition |
+|---|---|
+| `check` | Signal check only, no guided session |
+| `A` | Active breathwork: a guided session, following its breathing |
+| `P` | The same guided audio, breathing normally |
+| `M` | Meditation |
+| `F` | Flat rest: quiet rest lying down, no guided session |
+| `other` | Anything else, described in the notes |
+
+## Written protocol
+
+Each app has a `GUIDE` in `config.js`: the question, what you need, the steps of a whole session, one line per protocol, care and limits. The Protocol tab shows it beside the launchers. Its block tables come from `entry.create()`, so the table and the run cannot disagree, except for the order of a shuffled long test, which the tab says.
+
 ## Gates before a protocol starts
 
-Connected device · running acquisition · no other protocol · storage room for the whole protocol · for the long test: a heard cue test (speech mode) and a fresh 4-second window without clipping. A blocked launcher shows the first unmet gate beside itself.
+Connected device · running acquisition · no other protocol · storage room for the whole protocol. The Berger Effect app's long test also needs a heard cue test (speech mode) and a fresh 4-second window without clipping. Breathwork needs the heard cue test for every protocol on a board and never the clean-signal window. A blocked launcher shows the first unmet gate beside itself.
 
 ## Ending
 
@@ -41,6 +68,7 @@ Prompted ≠ observed. After a protocol, the operator marks each eye block *foll
 | `session_created`, `session_finished` | Session lifecycle |
 | `device_connected`, `device_disconnected` | Transport |
 | `acquisition_start`, `acquisition_stop`, `acquisition_start_failed` | Segments |
+| `recording_flag` | A recording flagged as a test, or the flag removed |
 | `counter_gap` | Inferred missing samples (analysis restarts) |
 | `protocol_start`, `phase_<label>`, `protocol_end_<reason>`, `protocol_refused` | Protocol timeline |
 | `speech_requested`, `speech_started`, `speech_ended`, `speech_error`, `cue_not_spoken` | What the browser speech engine reported |

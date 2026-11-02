@@ -1,5 +1,6 @@
 .bl-transport { display: flex; flex-wrap: wrap; gap: var(--td-space-1) var(--td-space-2); align-items: start; padding: var(--td-space-2) var(--td-space-3); border-bottom: 1px solid var(--td-color-surface-border); }
 .bl-transport .td-spacer { flex: 1; min-width: 8px; }
+.bl-transport .td-action { justify-items: start; }
 .bl-notice { padding: var(--td-space-1) var(--td-space-3); border-bottom: 1px solid var(--td-color-surface-border); font-size: var(--td-text-xs); color: var(--td-color-status-warning); }
 .bl-notice a { color: inherit; }
 .bl-view-controls { display: flex; flex-wrap: wrap; gap: var(--td-space-1) var(--td-space-2); }

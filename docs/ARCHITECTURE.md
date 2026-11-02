@@ -1,6 +1,6 @@
 # Architecture
 
-Static ES modules served from `127.0.0.1`, no bundler, no framework. Every instrument is a thin app (`apps/<name>/`) composed from shared layers in `src/`.
+Static ES modules, hosted or served locally from `127.0.0.1`, no bundler, no framework. Every instrument is a thin app (`apps/<name>/`) composed from shared layers in `src/`.
 
 ```mermaid
 flowchart TB
@@ -41,7 +41,7 @@ Four independent state machines, all visible in the UI:
 ## Data path per BLE notification
 
 1. `decodePacket` → records `{counter, channels[]}` (7/13/70/130-byte layouts).
-2. `CounterTracker` → contiguous, gap (inferred missing count) or duplicate. Any discontinuity resets analysis and display state (v3 `clearRings`).
+2. `CounterTracker` → contiguous, gap (inferred missing count) or duplicate. Any discontinuity resets analysis and display state.
 3. The recorder appends the raw row (index, arrival time, counter, channels, prompted phase, protocol and block ids). It flushes a chunk about every second.
 4. Valid rows feed the analysis engine and the display processor separately.
 5. Once per ≥500 ms the engine computes the latest window metrics and, every 2048 new samples, emits analysis windows that the recorder stores.
@@ -52,7 +52,7 @@ An acquisition app provides, through `LabController`'s constructor:
 
 | Dependency | Example (Berger) |
 |---|---|
-| `app` id, version, analysis plan id | `berger-lab`, `3.2.0`, `berger-v3-filtered-primary` |
+| `app` id, version, analysis plan id | `berger-lab`, `3.3.0`, `berger-v3-filtered-primary` |
 | `transport` | `createNpgBleTransport()` or `createSimulatedTransport()` |
 | `store` | `openIdbStore()` (fallback `MemoryStore`, labelled) |
 | `analysis.createEngine(montage)` | `new BergerV3WindowEngine({ mode })` |
@@ -61,7 +61,7 @@ An acquisition app provides, through `LabController`'s constructor:
 | `channelLabel(montage, ch)` | montage channel names |
 | `createDisplay()` (optional) | display processor for the live view |
 
-The report never imports a transport. See [`NEW_APP_GUIDE.md`](NEW_APP_GUIDE.md) for a worked outline.
+The report never imports a transport; it looks a session's app up in `apps/registry.js`. See [`NEW_APP_GUIDE.md`](NEW_APP_GUIDE.md) for a worked outline.
 
 ## Decisions
 

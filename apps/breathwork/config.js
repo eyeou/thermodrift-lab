@@ -10,7 +10,8 @@
 import { BERGER_V3, analysisFilterDescription, blockSummary } from '../../src/analysis/berger-v3.js';
 import { effectiveAdherence } from '../../src/analysis/adherence.js';
 import { median } from '../../src/core/stats.js';
-import { breathSignalCheckProtocol, breathRestProtocol, BREATH_PROTOCOL_VERSION } from '../../src/protocol/breath-protocol.js';
+import { plannedSeconds } from '../../src/protocol/berger-protocol.js';
+import { breathSignalCheckProtocol, breathRestProtocol, BREATH_COMPLETION_CUES, BREATH_PROTOCOL_VERSION } from '../../src/protocol/breath-protocol.js';
 
 export const APP = Object.freeze({ id: 'breathwork-lab', name: 'Breathwork', version: '0.2.0', versionLabel: 'Breathwork-Lab-0.2.0', analysisPlan: 'breathwork-1' });
 
@@ -173,7 +174,7 @@ export function protocolEntries({ simulated = false } = {}) {
   const speech = !simulated;
   const entries = [
     { name: 'breath-check', index: '01', label: 'Signal check', detail: '4 min · still, eyes closed, slow breathing, shrugs, deep breaths, short hold', create: () => breathSignalCheckProtocol(), requireCueCheck: true, requireSpeech: speech, primary: true },
-    { name: 'rest-before', index: '02', tabTitle: 'Rest before', label: 'Rest before the session', detail: '3 min · 1 min eyes open, 2 min eyes closed · then start the video', create: () => breathRestProtocol('before'), requireCueCheck: true, requireSpeech: speech },
+    { name: 'rest-before', index: '02', tabTitle: 'Rest before', label: 'Rest before the session', detail: '3 min · 1 min eyes open, 2 min eyes closed · then start your session', create: () => breathRestProtocol('before'), requireCueCheck: true, requireSpeech: speech },
     { name: 'rest-after', index: '03', tabTitle: 'Rest after', label: 'Rest after the session', detail: '3 min · same as before', create: () => breathRestProtocol('after'), requireCueCheck: true, requireSpeech: speech },
   ];
   if (simulated) entries.push({ name: 'breath-demo', index: 'D', tabTitle: 'Flow demo', label: 'Flow demo (simulated only)', detail: '42 s · the signal-check blocks, 6 s each · not an experiment', create: demoProtocol });
@@ -187,18 +188,84 @@ export function demoProtocol() {
   return { ...p, name: 'breath-demo', version: `${p.version}-demo`, blocks, settings: { ...p.settings, classification: 'demo_simulated_only' } };
 }
 
-/** The written protocol shown in the Protocol tab. Block tables come from the protocol definitions. */
-export const GUIDE = Object.freeze({
+const NOT_RECORDED = 'not recorded';
+
+/**
+ * How the guided session runs between the two rests. A format is what the operator plans and what
+ * the export records: it changes no protocol, filter or analysis window, and the app does not check
+ * that a session followed it.
+ */
+export const SESSION_FORMATS = Object.freeze({
+  'wim-hof-style': Object.freeze({
+    id: 'wim-hof-style',
+    label: 'Wim Hof-style',
+    length: 'about 16 minutes',
+    summary: 'A guided session of about 16 minutes: four rounds of deep breathing, each followed by an exhale hold and a recovery breath.',
+    need: 'Your guided session, as audio or video',
+    step: 'Start your guided audio or video and press V. Four rounds of deep breathing follow over about 16 minutes, each with an exhale hold and a recovery breath. While acquiring, B marks breathing, H a hold, R a recovery breath and M anything else. If you film it, three phone taps with three jaw clenches tie the video to the recording, at both ends.',
+    keys: 'Keys while acquiring: V video start · B breathing · H hold · R recovery breath · M marker.',
+    key: Object.freeze([{ kind: 'breathing', label: 'Deep breathing' }, { kind: 'hold', label: 'Exhale hold' }, { kind: 'recovery', label: 'Recovery breath' }]),
+    parts: Object.freeze([1, 2, 3, 4].flatMap(() => [{ kind: 'breathing', seconds: 140 }, { kind: 'hold', seconds: 85 }, { kind: 'recovery', seconds: 15 }])),
+  }),
+  'holotropic-style': Object.freeze({
+    id: 'holotropic-style',
+    label: 'Holotropic-style',
+    length: 'about 65 minutes',
+    summary: 'About forty minutes of deep connected breathing to music, guided live, then a closing sequence and a long recovery lying still.',
+    need: 'Music, and a trained facilitator to guide you live',
+    step: 'Start the music and press V. About forty minutes of deep connected breathing follow, guided live. The closing sequence is fast breaths, an exhale hold, an inhale hold with a whole-body contraction, and shaking. A long recovery lying still ends the session. While acquiring, B marks breathing, H a hold, R the start of the recovery and M anything else, and a helper can press them for you. If you film it, three phone taps with three jaw clenches tie the video to the recording, at both ends.',
+    keys: 'Keys while acquiring: V music start · B breathing · H hold · R recovery start · M marker.',
+    key: Object.freeze([{ kind: 'breathing', label: 'Deep connected breathing' }, { kind: 'closing', label: 'Closing sequence' }, { kind: 'recovery', label: 'Long recovery' }]),
+    parts: Object.freeze([{ kind: 'breathing', seconds: 2400 }, { kind: 'closing', seconds: 240 }, { kind: 'recovery', seconds: 1200 }]),
+    care: 'Run the long format with a trained facilitator present.',
+    markers: Object.freeze({ v: 'music start', r: 'recovery start' }),
+    completionCues: Object.freeze({ 'rest-before': 'Rest done. Open your eyes. Press V when the music starts.' }),
+  }),
+});
+
+export const DEFAULT_SESSION_FORMAT = 'wim-hof-style';
+const formatOf = (id) => SESSION_FORMATS[id] ?? SESSION_FORMATS[DEFAULT_SESSION_FORMAT];
+
+/** A recorded format in words. Sessions from before formats existed did not record one. */
+export function sessionFormatLabel(id) {
+  if (!id || id === NOT_RECORDED) return 'Not recorded';
+  return SESSION_FORMATS[id]?.label ?? String(id);
+}
+
+const MARKER_NOTES = Object.freeze({ b: 'breathing start', h: 'hold start', r: 'recovery breath', v: 'video start', m: 'marker' });
+
+/** What a marker key records, or null for any other key. A format can name its own start and recovery. */
+export function markerNote(formatId, key) {
+  return formatOf(formatId).markers?.[key] ?? MARKER_NOTES[key] ?? null;
+}
+
+/** What is spoken when a protocol completes, or undefined when nothing is. */
+export function completionCue(protocolName, formatId) {
+  return formatOf(formatId).completionCues?.[protocolName] ?? BREATH_COMPLETION_CUES[protocolName];
+}
+
+/** The plan of a whole sitting, in order. The check and the rests come from the protocols that run. */
+export function sessionTimeline(formatId = DEFAULT_SESSION_FORMAT) {
+  const format = formatOf(formatId);
+  const plain = (protocol) => [{ kind: 'plain', seconds: plannedSeconds(protocol) }];
+  return [
+    { names: ['Signal check', 'Check'], parts: plain(breathSignalCheckProtocol()) },
+    { names: ['Rest before', 'Rest'], parts: plain(breathRestProtocol('before')) },
+    { names: [`Your session, ${format.length}`, 'Your session'], parts: format.parts },
+    { names: ['Rest after', 'Rest'], parts: plain(breathRestProtocol('after')) },
+  ];
+}
+
+const BASE_GUIDE = Object.freeze({
   question: 'What do heart, brain, eye and muscle signals do around a guided breathing session, and which of them can be read during it?',
-  needs: ['NPG Lite with VibZ+ for six channels', 'Gold cups with paste for the head', 'Adhesive patches for ECG, EOG and EMG', 'Tape and a measuring tape', 'Your guided session, as audio or video', 'A phone on a tripod, if you want the video'],
-  time: 'First setup about 25 minutes. Check and rests about 10 minutes, plus your session.',
+  needs: ['NPG Lite with VibZ+ for six channels', 'Gold cups with paste for the head', 'Adhesive patches for ECG, EOG and EMG', 'Tape and a measuring tape', 'A phone on a tripod, if you want the video'],
   steps: [
     { title: 'Place the electrodes', text: 'Follow the figures. Cups with paste, gauze and tape. Patches with a taped cable loop near each one, so a pull never reaches the skin.', tab: 'setup', tabLabel: 'Open the figures' },
     { title: 'Fix the room', text: 'Kit on a mat, taped down, and never moved. Laptop on battery and at least a metre away, nothing charging from it: a laptop next to the kit can raise mains pickup.' },
     { title: 'Lie down and look', text: 'Arms at your sides, palms up. Start acquisition. The ECG shows beats. On the 0–100 Hz spectrum, narrow lines at 33 and 67 Hz: check contacts and wiring.', tab: 'signal', tabLabel: 'Open the signal' },
     { title: 'Signal check', text: 'Stillness, eyes closed, slow breathing, shrugs, deep breaths and a short hold, so each signal can be seen responding.', protocol: 'breath-check' },
     { title: 'Rest before', text: 'One minute with eyes open, two with eyes closed. It is the baseline for everything after.', protocol: 'rest-before' },
-    { title: 'Your session', text: 'Start your guided audio or video and press V. While acquiring, B marks breathing, H a hold, R a recovery breath and M anything else. If you film it, three phone taps with three jaw clenches tie the video to the recording, at both ends.' },
+    { title: 'Your session' },
     { title: 'Rest after', text: 'The same three minutes. Stay lying until it ends.', protocol: 'rest-after' },
     { title: 'Export', text: 'One recording, one file, and a test run stays flagged as a test. Write your notes before looking at any signal.', tab: 'recordings', tabLabel: 'Open the recordings' },
   ],
@@ -211,6 +278,21 @@ export const GUIDE = Object.freeze({
   care: 'Lying down, never in or near water, standing or driving. Fast breathing delays the urge to breathe, so give any hold a time limit. Stop for chest pain, faintness or anything unusual. With a heart condition, epilepsy or a pregnancy, ask a doctor first.',
   limits: 'One person, one session: descriptive, never proof of an effect. ADC counts, not microvolts. Scalp EEG above about 20 Hz carries muscle activity, more so during effortful breathing.',
 });
+
+/** The written protocol shown in the Protocol tab, for one format. Block tables come from the protocol definitions. */
+export function guideFor(formatId = DEFAULT_SESSION_FORMAT) {
+  const format = formatOf(formatId);
+  const needs = [...BASE_GUIDE.needs];
+  needs.splice(needs.length - 1, 0, format.need);
+  return {
+    ...BASE_GUIDE,
+    needs,
+    time: `First setup about 25 minutes. Check and rests about 10 minutes, plus ${format.length} for your session.`,
+    steps: BASE_GUIDE.steps.map((step) => (step.title === 'Your session' ? { ...step, text: format.step } : step)),
+  };
+}
+
+export const GUIDE = Object.freeze(guideFor());
 
 /** How the report describes this plan. Eye pairs apply to sessions that recorded them. */
 export const PRIMARY_METRIC = 'per block on the EEG channel: median absolute 8–13 Hz power after fixed causal 0.5–45 Hz filter and 50/100/150/200 Hz notches; rest after / rest before per eye state; alpha and slow shares of raw power are secondary';
@@ -308,6 +390,7 @@ export function describeBreathworkSession({ session, events = [], windows = [], 
     hypothesis: setup.hypothesis || 'not recorded',
     position: setup.position ?? 'not recorded',
     audio_notes: setup.audio_notes || 'not recorded',
+    session_format: setup.session_format ?? NOT_RECORDED,
     hardware: {
       reported_board: 'NPG Lite (exact revision unverified)',
       firmware: 'unknown (not queried by the app)',

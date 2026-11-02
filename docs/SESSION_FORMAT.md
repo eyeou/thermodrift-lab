@@ -28,7 +28,7 @@ File name `<stem>.zip`, one folder of the same stem. The stem is `[SIMULATED-]<a
 |---|---|
 | `raw.csv` | `sample_index, nominal_seconds_500hz, arrival_ms, counter, phase, protocol_id, block_id, ch1_adc … chN_adc` — every received sample, unaltered |
 | `windows.csv` | One row per analysis window and channel: positions, prompted phase, ids, `accepted_for_block_before_quality`, raw metrics, band powers, `alpha_filtered_8_13_counts2`, `reject_flags`, `warnings` |
-| `metadata.json` | Setup, montage and leads, source, hardware unknowns, units, method, analysis and display processing with coefficients, protocols, block summaries per channel, results, limitations, events, annotations, segments, `export_scope` (the whole session or one recording), integrity. Breathwork adds `channel_kinds` and `markers` |
+| `metadata.json` | Setup, montage and leads, source, hardware unknowns, units, method, analysis and display processing with coefficients, protocols, block summaries per channel, results, limitations, events, annotations, segments, `export_scope` (the whole session or one recording), integrity. Breathwork adds `channel_kinds`, `markers` and `session_format` |
 | `manifest.json` | Size and SHA-256 of each file, `scope`, integrity at export (chunk hashes, index order, unsaved samples), export method |
 
 `raw.csv` is written in two streaming passes over stored chunks, so export memory does not grow with session length. Rows still in memory when storage failed are included and counted as `unsaved_samples`.
@@ -37,3 +37,4 @@ File name `<stem>.zip`, one folder of the same stem. The stem is `[SIMULATED-]<a
 
 - Berger v3 exports (three loose files) open in the report; `tools/replay-berger-v3.mjs` replays them.
 - `windows.csv` keeps the v3 columns. `metadata.json` is a superset of v3 metadata.
+- `session_format` is additive: it sits in `setup` and at the top of `metadata.json`. A Breathwork session from before it opens and reports as it did, with the format shown as Not recorded, and exports `"session_format": "not recorded"`.

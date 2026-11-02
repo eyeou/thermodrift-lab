@@ -12,8 +12,6 @@
 .bl-flags[data-tone="warning"] { color: var(--td-color-status-warning); }
 .bl-flags[data-tone="ready"] { color: var(--td-color-status-ready); }
 .bl-markers { font-size: var(--td-text-xs); color: var(--td-color-ink-muted); display: grid; gap: 2px; margin: 0; padding-left: 16px; }
-.bl-results-reading { font-size: var(--td-text-sm); }
-.bl-results-reading strong { color: var(--td-color-data-rose); font-variant-numeric: tabular-nums; }
 .bl-export-status { font-size: var(--td-text-xs); color: var(--td-color-ink-muted); max-width: 46ch; }
 .bl-export-status[data-tone="error"] { color: var(--td-color-status-error); }
 .bl-export-status[data-tone="ready"] { color: var(--td-color-status-ready); }

@@ -26,12 +26,14 @@ function blockTable(definition, blockName) {
 }
 
 /**
- * @param {{guide:object, blockName:(label:string)=>string, goToTab:(id:string)=>void}} options
+ * @param {{guide:object, blockName:(label:string)=>string, goToTab:(id:string)=>void, intro?:Node|null}} options
  * guide: { question, needs[], time, steps[{title, text, tab?, protocol?}], protocols{name: {purpose, note?}}, limits, care? }
+ * intro: shown under the question of the whole session. The node stays in place when the guide changes.
  */
-export function createProtocolGuide({ guide, blockName, goToTab }) {
+export function createProtocolGuide({ guide: initial, blockName, goToTab, intro = null }) {
   const host = h('div', { class: 'td-guide' });
   let tabs = null;
+  let guide = initial;
 
   const show = (name) => tabs?.select(name);
 
@@ -41,16 +43,18 @@ export function createProtocolGuide({ guide, blockName, goToTab }) {
     return null;
   };
 
-  const whole = () => h('div', { class: 'td-guide-body' },
-    h('p', { class: 'td-guide-question', text: guide.question }),
+  const written = h('div', { class: 'td-guide-body' });
+  const whole = h('div', { class: 'td-guide-body' }, h('p', { class: 'td-guide-question', text: guide.question }), intro, written);
+  const paintWritten = () => written.replaceChildren(
     h('div', { class: 'td-guide-facts' },
       h('div', {}, h('span', { class: 'td-kicker', text: 'You need' }), h('ul', {}, ...guide.needs.map((n) => h('li', { text: n })))),
       h('div', {}, h('span', { class: 'td-kicker', text: 'Time' }), h('p', { text: guide.time }))),
     h('ol', { class: 'td-steps' }, ...guide.steps.map((step, i) => h('li', { class: 'td-step' },
       h('span', { class: 'td-step-n', 'aria-hidden': 'true', text: ROMAN[i] ?? String(i + 1) }),
       h('div', {}, h('strong', { text: step.title }), h('p', { text: step.text }), stepLink(step))))),
-    guide.care ? h('p', { class: 'td-guide-limit' }, h('strong', { text: 'Care. ' }), guide.care) : null,
+    ...(guide.care ? [h('p', { class: 'td-guide-limit' }, h('strong', { text: 'Care. ' }), guide.care)] : []),
     h('p', { class: 'td-guide-limit' }, h('strong', { text: 'Limits. ' }), guide.limits));
+  paintWritten();
 
   const one = (entry) => {
     const text = guide.protocols[entry.name] ?? {};
@@ -64,6 +68,11 @@ export function createProtocolGuide({ guide, blockName, goToTab }) {
   return {
     el: host,
     show,
+    /** Rewrites the whole-session text for a new guide; the open tab and the intro stay as they are. */
+    setGuide(next) {
+      guide = next;
+      paintWritten();
+    },
     /** Rebuilds the tabs when the protocols change (block length, for example); keeps the open tab. */
     update(entries) {
       const open = tabs?.current;
@@ -72,7 +81,7 @@ export function createProtocolGuide({ guide, blockName, goToTab }) {
         className: 'td-tabs--sub',
         initial: entries.some((e) => e.name === open) ? open : 'whole',
         tabs: [
-          { id: 'whole', title: 'Whole session', panel: whole() },
+          { id: 'whole', title: 'Whole session', panel: whole },
           ...entries.map((entry) => ({ id: entry.name, title: entry.tabTitle ?? entry.label, panel: one(entry) })),
         ],
       });

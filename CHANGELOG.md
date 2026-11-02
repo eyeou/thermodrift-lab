@@ -12,6 +12,9 @@
 
 ### Breathwork
 - Results and the session report show the rest before and the rest after as a chart.
+- Two session formats in the Protocol tab: Wim Hof-style and Holotropic-style. The written session step and a small timeline follow the choice, and the Run panel names it. The rests and the signal check stay the same.
+- The chosen format goes in the metadata as `session_format` and the session report shows it. A session from before it still opens and reads Not recorded. Recording and analysis do not change.
+- In the long format the V and R keys record music start and recovery start.
 
 ## 0.2.0 — 2026-11-02
 

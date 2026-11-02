@@ -2,11 +2,12 @@
  * Instruments known to the review surfaces. The report looks a session's app up here to label
  * montages, describe exports and draw results. No transport is imported from this file.
  * `analysisChannel(view)` is the live-window channel a session's results read, or null when the
- * session does not say. `metric` and `eligibility` describe the app's analysis plan.
+ * session does not say. `metric` and `eligibility` describe the app's analysis plan. An app with
+ * session formats names them through `sessionFormatLabel`.
  */
 import { BERGER_V3 } from '../src/analysis/berger-v3.js';
 import { APP as BERGER, MONTAGES as BERGER_MONTAGES, channelLabel as bergerChannelLabel, describeBergerSession, LIMITATIONS as BERGER_LIMITATIONS } from './berger/config.js';
-import { APP as BREATHWORK, MONTAGES as BREATHWORK_MONTAGES, channelLabel as breathworkChannelLabel, describeBreathworkSession, LIMITATIONS as BREATHWORK_LIMITATIONS, eegChannelOf, restComparison, PRIMARY_METRIC as BREATHWORK_METRIC, ELIGIBILITY as BREATHWORK_ELIGIBILITY } from './breathwork/config.js';
+import { APP as BREATHWORK, MONTAGES as BREATHWORK_MONTAGES, channelLabel as breathworkChannelLabel, describeBreathworkSession, LIMITATIONS as BREATHWORK_LIMITATIONS, eegChannelOf, restComparison, sessionFormatLabel, PRIMARY_METRIC as BREATHWORK_METRIC, ELIGIBILITY as BREATHWORK_ELIGIBILITY } from './breathwork/config.js';
 
 export const REGISTRY = Object.freeze({
   [BERGER.id]: {
@@ -30,6 +31,7 @@ export const REGISTRY = Object.freeze({
     limitations: BREATHWORK_LIMITATIONS,
     results: 'rest-comparison',
     restComparison,
+    sessionFormatLabel,
     analysisChannel: eegChannelOf,
     metric: BREATHWORK_METRIC,
     eligibility: BREATHWORK_ELIGIBILITY,

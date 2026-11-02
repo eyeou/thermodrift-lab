@@ -33,7 +33,7 @@ The Protocol tab offers two formats for the guided session. The rests and the si
 | Format | `session_format` | The session | Length |
 |---|---|---|---|
 | Wim Hof-style | `wim-hof-style` | Four rounds of deep breathing, each followed by an exhale hold and a recovery breath | About 16 min |
-| Holotropic-style | `holotropic-style` | About forty minutes of deep connected breathing to music, guided live; a closing sequence (fast breaths, an exhale hold, an inhale hold with a whole-body contraction, shaking); a long recovery lying still | About 65 min |
+| Holotropic-style | `holotropic-style` | About forty minutes of deep connected breathing to music, guided live; a closing sequence (fast breaths, an exhale hold, an inhale hold with a whole-body contraction, shaking); a long recovery lying still | About 60 min |
 
 A format states the plan and nothing measures it. The lengths in the timeline are approximate because the guide sets the pace. The format is fixed with the rest of the setup when acquisition starts, and it changes neither the recording nor the analysis. In the long format V records `music start` and R records `recovery start`. Run the long format with a trained facilitator present.
 

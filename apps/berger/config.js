@@ -103,7 +103,7 @@ export const GUIDE = Object.freeze({
     berger: { purpose: 'Four pairs of eyes open and closed. The ratio within each pair is the result.', note: 'Pair order is shuffled at each start: this is one possible order. Block length is set in the Run panel.' },
     'berger-demo': { purpose: 'The same labels with short blocks, for trying the interface. Not an experiment.' },
   },
-  limits: 'One session, one person, descriptive. ADC counts, not microvolts. Eye states are prompted, not measured.',
+  limits: 'One session, one person, descriptive. Raw ADC counts, because the gain is not calibrated. Eye states are prompted, not measured.',
 });
 
 export function formatDuration(s) {

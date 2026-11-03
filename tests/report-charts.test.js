@@ -57,7 +57,7 @@ test('rest headings follow the eligible row, and say so when there is none', () 
   assert.match(restFinding([row('open', 1), row('closed', 1.001)]), /reads the same/, 'what the table shows as 1.00×');
   assert.match(restFinding([row('open', 2), row('closed', null, 'too_few_windows')]), /^Eyes-open alpha is higher/, 'the row that can be read');
   assert.match(restFinding([row('open', null, 'missing_block'), row('closed', null, 'excluded')]), /cannot be compared/);
-  assert.deepEqual(restHero([row('open', 2), row('closed', 0.5)]), { value: '0.50×', definition: 'alpha after ÷ before, eyes closed' });
+  assert.deepEqual(restHero([row('open', 2), row('closed', 0.5)]), { value: '0.50×', definition: 'alpha after / before, eyes closed' });
   assert.equal(restHero([row('open', null, 'missing_block'), row('closed', null, 'excluded')]), null);
 });
 

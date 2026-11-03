@@ -378,7 +378,7 @@ export function timeCourseFinding({ eligible_count: n, higher_closed_count: k })
 
 /** The hero of a paired result, or null when no pair is eligible. */
 export function pairHero({ eligible_count: n, median_ratio: ratio }) {
-  return n && finite(ratio) ? { value: `${ratio.toFixed(2)}×`, definition: 'median closed ÷ open, eligible pairs' } : null;
+  return n && finite(ratio) ? { value: `${ratio.toFixed(2)}×`, definition: 'median closed / open, eligible pairs' } : null;
 }
 
 const comparedRow = (rows) => rows.find((r) => r.state === 'closed' && r.status === 'eligible') ?? rows.find((r) => r.state === 'open' && r.status === 'eligible') ?? null;
@@ -395,7 +395,7 @@ export function restFinding(rows) {
 /** The hero of a rest comparison, or null when no row is eligible. */
 export function restHero(rows) {
   const row = comparedRow(rows);
-  return row ? { value: `${row.alpha_ratio_after_before.toFixed(2)}×`, definition: `alpha after ÷ before, eyes ${row.state}` } : null;
+  return row ? { value: `${row.alpha_ratio_after_before.toFixed(2)}×`, definition: `alpha after / before, eyes ${row.state}` } : null;
 }
 
 // ---------------------------------------------------------------- cards

@@ -167,7 +167,7 @@ test('end to end: rest before, marked session, rest after, export with every cha
   assert.ok(raw.header.includes('ch3_adc'), 'channel 3 exported raw');
   assert.ok(raw.rows.some((r) => r[4] === 'rest_after_closed'));
   const meta = JSON.parse(new TextDecoder().decode(files[name('metadata.json')]));
-  assert.equal(meta.version, 'Breathwork-Lab-0.2.0');
+  assert.equal(meta.version, 'Breathwork-Lab-0.3.0');
   assert.equal(meta.mode, 'breath-emg');
   assert.equal(meta.position, 'lying');
   assert.deepEqual(meta.channel_kinds, ['ecg', 'eeg', 'emg']);

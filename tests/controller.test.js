@@ -153,7 +153,7 @@ test('full Berger flow: gates, 560 s protocol, auto-stop, adherence, export roun
   assert.equal(raw.rows.length, c.health.samples);
   assert.ok(raw.rows.some((r) => r[4] === 'eyes_closed_pair2'), 'prompted labels preserved after exclusion');
   const meta = JSON.parse(new TextDecoder().decode(files[name('metadata.json')]));
-  assert.equal(meta.version, 'Berger-Lab-3.3.0');
+  assert.equal(meta.version, 'Berger-Lab-3.4.0');
   assert.equal(meta.analysis_processing.plan_id, 'berger-v3-filtered-primary');
   assert.deepEqual(meta.analysis_processing.filter.harmonic_notches_hz, [100, 150, 200]);
   assert.equal(meta.blocks.find((b) => b.label === 'eyes_closed_pair2').adherence, 'exclude');

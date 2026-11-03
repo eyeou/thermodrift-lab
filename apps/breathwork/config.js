@@ -13,7 +13,7 @@ import { median } from '../../src/core/stats.js';
 import { plannedSeconds } from '../../src/protocol/berger-protocol.js';
 import { breathSignalCheckProtocol, breathRestProtocol, BREATH_COMPLETION_CUES, BREATH_PROTOCOL_VERSION } from '../../src/protocol/breath-protocol.js';
 
-export const APP = Object.freeze({ id: 'breathwork-lab', name: 'Breathwork', version: '0.2.0', versionLabel: 'Breathwork-Lab-0.2.0', analysisPlan: 'breathwork-1' });
+export const APP = Object.freeze({ id: 'breathwork-lab', name: 'Breathwork', version: '0.3.0', versionLabel: 'Breathwork-Lab-0.3.0', analysisPlan: 'breathwork-1' });
 
 /** Channel whose live windows summarise the EEG (channel 2, Oz, in every montage). */
 export const EEG_CHANNEL = 1;

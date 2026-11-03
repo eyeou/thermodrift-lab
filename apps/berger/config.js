@@ -6,7 +6,7 @@ import { BERGER_V3, analysisFilterDescription, blockSummary, pairedResults } fro
 import { baselineProtocol, artifactControlsProtocol, bergerLongProtocol, plannedSeconds } from '../../src/protocol/berger-protocol.js';
 import { effectiveAdherence } from '../../src/analysis/adherence.js';
 
-export const APP = Object.freeze({ id: 'berger-lab', name: 'Berger Effect', version: '3.3.0', versionLabel: 'Berger-Lab-3.3.0', analysisPlan: BERGER_V3.plan_id });
+export const APP = Object.freeze({ id: 'berger-lab', name: 'Berger Effect', version: '3.4.0', versionLabel: 'Berger-Lab-3.4.0', analysisPlan: BERGER_V3.plan_id });
 
 const RED = '#E5484D', BLACK = '#151515', WHITE = '#F2F2F2', BLUE = '#3E7BFA';
 

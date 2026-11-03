@@ -91,7 +91,7 @@ export const BREATHWORK_EXAMPLE = Object.freeze({
     ['RMSSD, eyes closed (ms)', '70', '35'],
     ['Alpha at Oz, eyes closed (count-equiv.²)', '110', '60'],
     ['Alpha at Oz, eyes open (count-equiv.²)', '10', '12'],
-    ['Alpha, closed ÷ open', '11×', '5×'],
+    ['Alpha, closed / open', '11×', '5×'],
   ],
   /** The two alpha rows above, as the rest chart reads them. */
   rest_alpha: [
@@ -336,11 +336,11 @@ export function exampleView(example, { onHide, formatLabel = null }) {
       reportCard({
         title: 'Alpha rises each time the eyes close',
         sub: 'One point per 4.1 s analysis window. Shaded blocks are the prompted eye states.',
-        hero: { value: `${example.median_ratio.toFixed(1)}×`, definition: 'median closed ÷ open, all 4 pairs' },
+        hero: { value: `${example.median_ratio.toFixed(1)}×`, definition: 'median closed / open, all 4 pairs' },
         draw: (width) => timeCourseSvg(example, { width }),
       }),
       h('div', { class: 'td-example-pair' },
-        reportCard({ title: 'Alpha is higher with the eyes closed in all 4 pairs', sub: 'Median 8–13 Hz power per block. The ratio is closed ÷ open.', width: 520, draw: (width) => pairsSvg(example, { width }) }),
+        reportCard({ title: 'Alpha is higher with the eyes closed in all 4 pairs', sub: 'Median 8–13 Hz power per block. The ratio is closed / open.', width: 520, draw: (width) => pairsSvg(example, { width }) }),
         reportCard({ title: 'The rise sits in the alpha band, near 11 Hz', sub: 'With the eyes closed, one narrow peak rises and the rest barely moves.', width: 520, draw: (width) => spectrumSvg({ width }) })),
       h('div', { class: 'td-report-block' }, table('Example: alpha per pair', ['Pair', 'Open α', 'Closed α', 'Closed / open'], example.pairs.map((p) => [`Pair ${p.pair}`, p.open, p.closed, `${p.ratio.toFixed(1)}×`]))),
       ...reading(example.reading)];

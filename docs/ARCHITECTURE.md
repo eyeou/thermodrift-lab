@@ -52,7 +52,7 @@ An acquisition app provides, through `LabController`'s constructor:
 
 | Dependency | Example (Berger) |
 |---|---|
-| `app` id, version, analysis plan id | `berger-lab`, `3.3.0`, `berger-v3-filtered-primary` |
+| `app` id, version, analysis plan id | `berger-lab`, `3.4.0`, `berger-v3-filtered-primary` |
 | `transport` | `createNpgBleTransport()` or `createSimulatedTransport()` |
 | `store` | `openIdbStore()` (fallback `MemoryStore`, labelled) |
 | `analysis.createEngine(montage)` | `new BergerV3WindowEngine({ mode })` |

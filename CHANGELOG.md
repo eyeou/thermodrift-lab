@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 — 2026-11-03
 
 ### Shared
 - Home: one link to open each app.
@@ -11,10 +11,10 @@
 - Result charts are drawn at the width of their card, so labels keep their size on a phone.
 - Design tokens: `data.rose-soft` and `data.periwinkle-soft`, the two eye states in result charts.
 
-### Berger Effect
+### Berger Effect 3.4.0
 - Results show alpha window by window above the pairs, as the session report does.
 
-### Breathwork
+### Breathwork 0.3.0
 - Signal tab: the channel boxes replace the dropdown, and an All channels view stacks every raw channel on one time axis.
 - Protocol tab: what you need folds away, and the written guide is shorter.
 - Results and the session report show the rest before and the rest after as a chart.

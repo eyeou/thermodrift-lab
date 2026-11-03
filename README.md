@@ -90,7 +90,7 @@ Recordings are stored in your browser (IndexedDB) and leave it only when you exp
 
 ## Status
 
-`0.2.0`. Tested with one NPG Lite. Analysis plans are frozen: any change gets a new plan id.
+`0.3.0`. Tested with one NPG Lite. Analysis plans are frozen: any change gets a new plan id.
 
 ## Contributing and licence
 

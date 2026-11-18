@@ -21,3 +21,20 @@
 .bl-report-link { display: inline-flex; align-items: center; text-decoration: none; }
 .bl-protocol-settings { display: grid; grid-template-columns: 1fr 1fr; gap: var(--td-space-1); }
 @media (max-width: 520px) { .bl-protocol-settings { grid-template-columns: 1fr; } }
+/* Phone: Connect and Start acquisition across the width, the other actions two to a row, reasons in readable text. */
+@media (max-width: 760px) {
+  .bl-transport { gap: var(--td-space-1); padding: var(--td-space-1_5) var(--td-space-2); }
+  .bl-transport > * { flex: 1 1 calc(50% - var(--td-space-1)); min-width: 0; }
+  .bl-transport > .td-spacer, .bl-transport > .bl-export-status:empty { display: none; }
+  .bl-transport > .td-action:nth-child(1), .bl-transport > .td-action:nth-child(2), .bl-transport > .bl-export-status { flex-basis: 100%; }
+  /* Once connected the header badge says so, and the spent Connect button gives its row back. */
+  .bl-transport > .td-action:nth-child(1):has(> .td-btn:disabled):has(> .td-why[hidden]) { display: none; }
+  /* While acquiring, Acquiring and Stop share a row. */
+  .bl-transport > .td-action:nth-child(2):has(> .td-btn:disabled):has(> .td-why[hidden]) { flex-basis: calc(50% - var(--td-space-1)); }
+  .bl-transport .td-action { justify-items: stretch; }
+  .bl-transport .td-btn { width: 100%; min-height: 48px; padding: 0 var(--td-space-1); font-size: 15px; line-height: 1.2; }
+  .bl-transport .bl-report-link { justify-content: center; }
+  .bl-transport .td-why { font-size: var(--td-text-sm); }
+  .bl-notice { padding: var(--td-space-1) var(--td-space-2); }
+  .bl-marker-row { grid-template-columns: minmax(0, 1fr); }
+}

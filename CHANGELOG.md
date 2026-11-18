@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased — 2026-11-18
+
+### Shared
+- Header: a device badge (NPG Lite · Not connected, Connected, Acquiring) replaces the status line, which now shows only warnings and errors. The version line is gone.
+- The Thermodrift mark leads to the site, and LAB to the Lab.
+- Protocol tab: one page for the whole session, without sub-tabs, block strips or block tables. The Run panel stays open.
+- What you need moves to the bottom of the Setup tab.
+- The spoken cue check is optional and sits at the bottom of the Run panel.
+- Phones: layouts, tabs and placement drawings reworked for small screens.
+- Live status and an optional disk copy of a session, through the local server only.
+
+### Breathwork
+- The rest before and the rest after are no longer separate protocols, timeline blocks or button actions. Older bundles still open.
+
 ## 0.3.0 — 2026-11-03
 
 ### Shared

@@ -23,6 +23,9 @@ code, .td-mono { font-family: var(--td-font-mono); font-size: var(--td-text-xs);
 /* ---------- brand ---------- */
 .td-logo { display: block; height: auto; width: 176px; aspect-ratio: 1172 / 227; }
 .td-brand { display: flex; align-items: center; gap: var(--td-space-3); }
+.td-brand-link { display: block; color: inherit; text-decoration: none; }
+.td-brand-link:hover { opacity: 0.85; }
+.td-brand-link:focus-visible { outline: 2px solid var(--td-color-brand-brass); outline-offset: 4px; }
 .td-diamond { width: 9px; height: 9px; flex: none; background: var(--td-color-brand-brass); transform: rotate(45deg); }
 .td-lab-letters { display: block; fill: var(--td-color-brand-brass); }
 .td-lab-letters svg { display: block; height: 22px; width: auto; }
@@ -62,6 +65,9 @@ code, .td-mono { font-family: var(--td-font-mono); font-size: var(--td-text-xs);
 /* ---------- source banner (never confusable with live hardware) ---------- */
 .td-source { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; font: 700 var(--td-text-xs)/1 var(--td-font-ui); letter-spacing: 0.1em; text-transform: uppercase; border: 1px solid currentColor; }
 .td-source[data-kind="ble"] { color: var(--td-color-status-live); }
+.td-source[data-kind="off"] { color: var(--td-color-ink-muted); }
+.td-source-icon { display: inline-flex; }
+.td-status-strip:empty { display: none; }
 .td-source[data-kind="simulated"], .td-source[data-kind="replay"] {
   color: var(--td-color-ink-inverse); border-color: var(--td-color-status-simulated);
   background: repeating-linear-gradient(135deg, var(--td-color-status-simulated) 0 10px, #e2d2ff 10px 20px);
@@ -224,11 +230,7 @@ select:disabled, textarea:disabled, input:disabled { color: var(--td-color-ink-m
 /* ---------- placement plates ---------- */
 .td-plates { display: grid; gap: var(--td-space-2); grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr)); }
 .td-plate { margin: 0; min-width: 0; }
-@media (max-width: 480px) {
-  /* Keep the labels legible on a phone: the plates scroll sideways instead of shrinking. */
-  .td-plates { display: flex; overflow-x: auto; scroll-snap-type: x proximity; }
-  .td-plate { flex: 0 0 440px; scroll-snap-align: start; }
-}
+/* On a phone the apps show one plate at a time instead (placementStage), so the labels stay legible. */
 .td-plate svg { display: block; width: 100%; height: auto; }
 
 /* ---------- tab layouts ---------- */
@@ -261,20 +263,64 @@ select:disabled, textarea:disabled, input:disabled { color: var(--td-color-ink-m
 .td-format { display: grid; gap: var(--td-space-1); padding: var(--td-space-2) 0; border-top: 1px solid var(--td-color-surface-border); }
 .td-format-summary { font-size: var(--td-text-sm); max-width: 72ch; margin-top: var(--td-space-1); }
 .td-format .td-report-plot { margin-top: var(--td-space-1); }
-.td-guide-body { display: grid; gap: var(--td-space-2); }
-.td-guide-question { font: 400 var(--td-text-lg)/1.35 var(--td-font-editorial); max-width: 68ch; }
-.td-guide-needs { font-size: var(--td-text-sm); color: var(--td-color-ink-muted); }
-.td-guide-needs summary { cursor: pointer; color: var(--td-color-ink-primary); }
-.td-guide-needs ul { margin: 8px 0 0; padding-left: 16px; display: grid; gap: 2px; }
+.td-guide-body { display: grid; gap: var(--td-space-3); }
+.td-guide-question { font: 400 var(--td-text-lg)/1.4 var(--td-font-editorial); max-width: 62ch; padding-left: var(--td-space-2); border-left: 2px solid var(--td-color-brand-brass); }
+/* What you need: a short checklist, always in view. */
+.td-needs { display: grid; gap: var(--td-space-1); padding: var(--td-space-2); background: var(--td-color-surface-raised); border: 1px solid var(--td-color-surface-border); border-top: 1px solid var(--td-color-brand-brass); }
+.td-needs .td-kicker { color: var(--td-color-brand-brass); }
+.td-needs ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px var(--td-space-3); grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); font-size: var(--td-text-sm); }
+.td-needs li { position: relative; padding-left: 18px; }
+.td-needs li::before { content: ""; position: absolute; left: 2px; top: 0.5em; width: 6px; height: 6px; background: var(--td-color-brand-brass); transform: rotate(45deg); }
+/* Steps: a numbered sequence joined by a brass hairline. Choosing one shows its figure. */
 .td-steps { list-style: none; margin: 0; padding: 0; display: grid; }
-.td-step { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: var(--td-space-1); padding: var(--td-space-2) 0; border-top: 1px solid var(--td-color-surface-border); }
-.td-step-n { font: italic 400 var(--td-text-lg)/1.2 var(--td-font-editorial); color: var(--td-color-data-sand); }
-.td-step strong { font-weight: 600; }
-.td-step p { color: var(--td-color-ink-muted); font-size: var(--td-text-sm); max-width: 72ch; margin-top: 2px; }
+.td-step { position: relative; display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: var(--td-space-2); padding: 0 var(--td-space-1) var(--td-space-3) 0; }
+.td-step::before { content: ""; position: absolute; left: 21px; top: 44px; bottom: 0; width: 1px; background: var(--td-color-brand-brass); opacity: 0.45; }
+.td-step:last-child { padding-bottom: 0; }
+.td-step:last-child::before { display: none; }
+.td-step-head { grid-column: 1 / -1; display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: var(--td-space-2); align-items: center; appearance: none; background: none; border: 0; padding: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.td-step-n { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid var(--td-color-brand-brass); background: var(--td-color-surface-base); font: italic 400 var(--td-text-lg)/1 var(--td-font-editorial); color: var(--td-color-data-sand); }
+.td-step-title { font: 400 var(--td-text-md)/1.3 var(--td-font-editorial); color: var(--td-color-ink-primary); }
+.td-step-head:hover .td-step-title { text-decoration: underline; text-decoration-color: var(--td-color-brand-brass); text-underline-offset: 4px; }
+.td-step-text { grid-column: 2; display: grid; gap: var(--td-space-1); justify-items: start; margin-top: 4px; cursor: pointer; }
+.td-step-text p { color: var(--td-color-ink-muted); font-size: var(--td-text-sm); line-height: 1.55; max-width: 66ch; }
+.td-step.is-selected .td-step-n { background: var(--td-color-brand-brass); color: var(--td-color-ink-inverse); font-style: normal; }
+.td-step.is-selected .td-step-text p { color: var(--td-color-ink-primary); }
+.td-step-link { appearance: none; background: transparent; border: 1px solid var(--td-color-surface-border-strong); padding: 5px 10px; color: var(--td-color-data-sand); font: 500 var(--td-text-xs)/1.2 var(--td-font-ui); letter-spacing: 0.02em; cursor: pointer; }
+.td-step-link::after { content: " →"; }
+.td-step-link:hover { border-color: var(--td-color-brand-brass); }
 .td-link-btn { appearance: none; background: none; border: 0; padding: 0; margin-top: 4px; color: var(--td-color-data-sand); font: inherit; font-size: var(--td-text-xs); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 .td-guide-limit { font-size: var(--td-text-xs); color: var(--td-color-ink-muted); max-width: 86ch; }
 .td-guide-limit strong { color: var(--td-color-ink-primary); font-weight: 600; }
-.td-guide-table td:nth-child(4) { min-width: 240px; color: var(--td-color-ink-muted); }
+/* The figure of the chosen step: at the top of the rail, or under the step on a narrow screen. */
+.td-guide-stage { display: grid; gap: var(--td-space-2); min-width: 0; }
+.td-guide-stage > header { display: grid; gap: 4px; }
+.td-guide-stage .td-kicker { color: var(--td-color-brand-brass); }
+.td-stage-title { font: 400 var(--td-text-lg)/1.2 var(--td-font-editorial); }
+.td-guide-stage[data-place="inline"] { position: relative; z-index: 1; grid-column: 1 / -1; margin-top: var(--td-space-2); padding: var(--td-space-2); background: var(--td-color-surface-base); border: 1px solid var(--td-color-surface-border); }
+.td-guide-stage[data-place="inline"] > header { display: none; }
+@media (max-width: 480px) { .td-guide-stage[data-place="inline"] { padding: var(--td-space-1); } .td-step { padding-right: 0; } }
+.td-rail-stage { padding: var(--td-space-2); border-bottom: 1px solid var(--td-color-surface-border); }
+.td-rail-stage:empty, .td-workspace:not([data-tab="protocol"]) .td-rail-stage { display: none; }
+.td-stage-body { display: grid; gap: var(--td-space-2); min-width: 0; }
+.td-stage-figure { margin: 0; display: grid; gap: var(--td-space-1); min-width: 0; }
+.td-stage-svg svg { display: block; width: 100%; height: auto; }
+.td-stage-plate { max-width: 420px; }
+.td-stage-views { display: flex; gap: 0; border-bottom: 1px solid var(--td-color-surface-border); }
+.td-stage-views button { appearance: none; background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; padding: 6px 10px; color: var(--td-color-ink-muted); font: 400 var(--td-text-xs)/1.2 var(--td-font-ui); cursor: pointer; }
+.td-stage-views button[aria-pressed="true"] { color: var(--td-color-ink-primary); border-bottom-color: var(--td-color-data-sand); }
+.td-stage-leads { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: var(--td-text-xs); }
+.td-stage-leads li { display: grid; grid-template-columns: 10px 44px minmax(0, 1fr); gap: 8px; align-items: center; }
+.td-stage-leads i { width: 10px; height: 10px; box-shadow: 0 0 0 1px var(--td-color-ink-muted); }
+.td-stage-leads span { color: var(--td-color-ink-muted); }
+.td-bundle-zip { display: flex; align-items: center; gap: 8px; color: var(--td-color-data-sand); }
+.td-bundle-zip::before { content: ""; width: 8px; height: 8px; background: var(--td-color-brand-brass); transform: rotate(45deg); }
+.td-bundle ul { list-style: none; margin: 0 0 0 3px; padding: 0 0 0 var(--td-space-2); border-left: 1px solid var(--td-color-brand-brass); display: grid; gap: var(--td-space-1); }
+.td-bundle li { display: grid; gap: 2px; font-size: var(--td-text-xs); color: var(--td-color-ink-muted); }
+.td-bundle li .td-mono { color: var(--td-color-ink-primary); }
+.td-bundle a { color: var(--td-color-data-periwinkle-soft); }
+/* Run controls fold away on the Protocol tab until a device is connected. */
+@media (min-width: 1101px) { .td-workspace[data-tab="protocol"] { grid-template-columns: minmax(0, 1fr) minmax(320px, 420px); } }
+/* The blocks of a protocol to scale. Colours follow the data: periwinkle open, rose closed. */
 .td-main--tabs { padding: 0; display: block; }
 .td-main--tabs .td-tabpanels { padding: var(--td-space-3); }
 .td-main--tabs .td-workspace { padding: var(--td-space-3); }
@@ -282,3 +328,68 @@ select:disabled, textarea:disabled, input:disabled { color: var(--td-color-ink-m
 .td-main--tabs .td-tabs--sub .td-tabpanels { padding: var(--td-space-2) 0 0; }
 @media (max-width: 760px) { .td-main--tabs .td-tabpanels, .td-main--tabs .td-workspace { padding: var(--td-space-2); } .td-main--tabs .td-workspace > .td-tabpanels { padding: 0; } }
 .td-tab-live:empty { display: none; }
+
+/* Optional spoken-cue check, last item of the Run rail */
+.td-cue-field { padding-bottom: 12px; }
+
+/* Setup tab: the equipment list sits under the lead list */
+.td-setup-left { display: grid; gap: var(--td-space-3); align-content: start; }
+
+/* ---------- tab bar: tabs and the live block line ---------- */
+.td-tabbar { position: sticky; top: 0; z-index: 5; display: flex; align-items: stretch; gap: 0 var(--td-space-2); padding: 0 var(--td-space-3); background: var(--td-color-surface-base); border-bottom: var(--td-rule) solid var(--td-color-surface-border-strong); }
+.td-tabbar > .td-tablist { position: static; flex: 1 1 auto; min-width: 0; padding: 0; border-bottom: 0; background: transparent; }
+.td-tabbar > .td-tab-live { flex: none; }
+
+/* ---------- phone: header, tab bar, touch targets, readable small text ---------- */
+@media (max-width: 760px) {
+  :root { --td-text-xs: 13px; }
+  /* Logo and LAB on the first line, the app name on the second, device and session under it. */
+  .td-header { gap: var(--td-space-1) var(--td-space-1_5); padding: 2px var(--td-space-2) var(--td-space-2); }
+  .td-header > .td-brand { flex: 1 0 100%; }
+  .td-brand-link { display: flex; align-items: center; min-height: var(--td-touch-target); }
+  .td-header > .td-app-id { flex: 1 0 100%; }
+  .td-header .td-app-name strong { font-size: 22px; }
+  .td-header > .td-spacer { display: none; }
+  .td-header > .td-source { min-height: 36px; padding: 6px 12px; font-size: var(--td-text-sm); font-weight: 600; letter-spacing: 0.02em; text-transform: none; }
+  .td-header > .td-mono { align-self: center; font-size: var(--td-text-xs); }
+
+  /* Tabs: number over the name, the row scrolls sideways when it is wider than the screen and fades at the cut edge. */
+  .td-tabbar { flex-wrap: wrap; padding: 0; }
+  .td-tabbar > .td-tablist { flex: 1 0 100%; }
+  .td-tablist { padding: 0 var(--td-space-0_5); gap: 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; }
+  .td-tablist::-webkit-scrollbar { display: none; }
+  .td-tablist[data-more="end"] { mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); }
+  .td-tablist[data-more="start"] { mask-image: linear-gradient(to left, #000 calc(100% - 40px), transparent); }
+  .td-tablist[data-more="both"] { mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent); }
+  .td-tabbar .td-tab { flex: 1 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 56px; padding: 8px 7px 7px; font-size: 16px; }
+  .td-tabbar .td-tab .td-index { margin: 0; font-size: 12px; }
+  .td-tabbar > .td-tab-live { flex: 1 0 100%; padding: 6px var(--td-space-2); border-top: 1px solid var(--td-color-surface-border); font-size: var(--td-text-sm); font-weight: 600; }
+
+  /* Fields: 16 px text so the phone does not zoom on focus, rows tall enough for a thumb. */
+  select, textarea, input[type="text"] { font-size: 16px; }
+  select { min-height: var(--td-touch-target); }
+  .td-check { grid-template-columns: 24px 1fr; gap: 10px; align-items: center; min-height: var(--td-touch-target); padding: 4px 0; font-size: var(--td-text-sm); }
+  .td-check input { width: 22px; height: 22px; margin: 0; }
+  .td-btn { min-height: var(--td-touch-target); }
+  .td-step-link { min-height: var(--td-touch-target); padding: 8px 14px; font-size: var(--td-text-sm); }
+  .td-lead-list { font-size: var(--td-text-sm); }
+  .td-lead { grid-template-columns: 14px 36px minmax(0, 1fr); align-items: start; }
+  .td-lead i { margin-top: 3px; }
+}
+@media (forced-colors: active) { .td-tablist[data-more] { mask-image: none; } }
+
+/* ---------- placement views: one plate at a time, chosen by name ---------- */
+.td-stage-views button { min-height: 40px; padding: 8px 14px; font-size: var(--td-text-sm); }
+.td-stage-views button:focus-visible { outline-offset: -2px; }
+.td-plates:has(> .td-stage-figure) { display: block; }
+/* A step picture under its step: no wider than it reads well on a tablet. */
+.td-guide-stage[data-place="inline"] .td-stage-svg { max-width: 520px; }
+.td-plates > .td-stage-figure .td-stage-plate { max-width: 560px; }
+.td-plates > .td-stage-figure .td-stage-views { max-width: 560px; }
+@media (max-width: 760px) {
+  .td-stage-views button { flex: 1 1 0; min-height: var(--td-touch-target); font-size: 15px; }
+  .td-stage-leads { font-size: var(--td-text-sm); }
+  .td-stage-leads li { grid-template-columns: 12px 44px minmax(0, 1fr); align-items: start; }
+  .td-stage-leads i { margin-top: 4px; }
+}
+@media (forced-colors: active) { .td-stage-views button[aria-pressed="true"] { outline: 2px solid Highlight; outline-offset: -4px; } }

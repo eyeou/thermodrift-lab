@@ -1,5 +1,6 @@
 // Breathwork: protocol definitions, rest comparison and an isolated end-to-end run.
 // SYNTHETIC SIGNALS ONLY — this proves software behaviour, not BLE, contact, hearing or physiology.
+import { breathRestProtocol } from '../src/protocol/breath-protocol.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { LabController } from '../src/lab/controller.js';
@@ -15,14 +16,11 @@ import { instrumentFor } from '../apps/registry.js';
 
 test('breathwork protocols: durations, cue gates, simulated-only demo', () => {
   const entries = protocolEntries();
-  assert.deepEqual(entries.map((e) => e.name), ['breath-check', 'rest-before', 'rest-after']);
-  assert.deepEqual(entries.map((e) => plannedSeconds(e.create())), [240, 180, 180]);
+  assert.deepEqual(entries.map((e) => e.name), ['breath-check']);
+  assert.deepEqual(entries.map((e) => plannedSeconds(e.create())), [240]);
   assert.ok(entries.every((e) => e.create().autoStopAcquisition === false), 'no protocol here stops acquisition');
   assert.equal(GUIDE.protocols.berger, undefined, 'the Berger test lives in Berger Effect');
-  assert.ok(entries.every((e) => e.requireCueCheck && e.requireSpeech));
-  const before = entries[1].create(), after = entries[2].create();
-  assert.deepEqual(before.blocks.map((b) => b.seconds), after.blocks.map((b) => b.seconds), 'rests before and after are identical in timing');
-  assert.equal(before.autoStopAcquisition, false, 'acquisition continues into the guided session');
+  assert.ok(entries.every((e) => !e.requireCueCheck && e.requireSpeech));
   const sim = protocolEntries({ simulated: true });
   assert.equal(sim.at(-1).name, 'breath-demo');
   assert.ok(sim.every((e) => !e.requireSpeech));
@@ -135,7 +133,9 @@ test('end to end: rest before, marked session, rest after, export with every cha
   c.testCue();
   feed(3000);
   c.confirmCueHeard(true);
-  const [, beforeEntry, afterEntry] = protocolEntries();
+  // The engine still runs the rests (older recordings, the report page); the app no longer offers them.
+  const beforeEntry = { name: 'rest-before', create: () => breathRestProtocol('before') };
+  const afterEntry = { name: 'rest-after', create: () => breathRestProtocol('after') };
   const run = async (entry, closedAmp) => {
     const started = await c.startProtocol(entry.create(), { requireCueCheck: true, requireSpeech: true });
     assert.equal(started.ok, true, `${entry.name} starts`);
@@ -167,7 +167,7 @@ test('end to end: rest before, marked session, rest after, export with every cha
   assert.ok(raw.header.includes('ch3_adc'), 'channel 3 exported raw');
   assert.ok(raw.rows.some((r) => r[4] === 'rest_after_closed'));
   const meta = JSON.parse(new TextDecoder().decode(files[name('metadata.json')]));
-  assert.equal(meta.version, 'Breathwork-Lab-0.3.0');
+  assert.equal(meta.version, 'Breathwork-Lab-0.4.0-dev');
   assert.equal(meta.mode, 'breath-emg');
   assert.equal(meta.position, 'lying');
   assert.deepEqual(meta.channel_kinds, ['ecg', 'eeg', 'emg']);

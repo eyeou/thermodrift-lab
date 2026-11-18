@@ -64,9 +64,9 @@ export function channelLabel(montage, ch) {
 export function protocolEntries({ simulated = false, blockSeconds = 60, audioCondition = 'cues_only' } = {}) {
   const berger = bergerLongProtocol({ blockSeconds, audioCondition });
   const entries = [
-    { name: 'baseline', index: '01', tabTitle: 'Baseline', label: 'Relaxed baseline', detail: '60 s · eyes open · quality check', create: () => baselineProtocol() },
-    { name: 'artifact', index: '02', tabTitle: 'Controls', label: 'Blink / jaw controls', detail: '75 s · gentle · inspect afterwards', create: () => artifactControlsProtocol() },
-    { name: 'berger', index: '03', tabTitle: 'Berger test', label: 'Long Berger test', detail: `${formatDuration(plannedSeconds(berger))} · four open/closed pairs`, create: () => bergerLongProtocol({ blockSeconds, audioCondition }), requireCueCheck: true, requireCleanSignal: true, requireSpeech: !simulated, primary: true },
+    { name: 'baseline', index: '01', tabTitle: 'Baseline', label: 'Relaxed baseline', detail: 'Eyes open · quality check', create: () => baselineProtocol() },
+    { name: 'artifact', index: '02', tabTitle: 'Controls', label: 'Blink / jaw controls', detail: 'Gentle · inspect afterwards', create: () => artifactControlsProtocol() },
+    { name: 'berger', index: '03', tabTitle: 'Berger test', label: 'Long Berger test', detail: 'Four open/closed pairs', create: () => bergerLongProtocol({ blockSeconds, audioCondition }), requireCueCheck: false, requireCleanSignal: true, requireSpeech: !simulated, primary: true },
   ];
   if (simulated) entries.push({ name: 'berger-demo', index: 'D', tabTitle: 'Flow demo', label: 'Flow demo (simulated only)', detail: `${formatDuration(plannedSeconds(demoProtocol()))} · same labels, short blocks · not an experiment`, create: demoProtocol, requireCleanSignal: true });
   return entries;
@@ -89,12 +89,13 @@ export const GUIDE = Object.freeze({
   question: 'Does closing the eyes raise 8–13 Hz power at the back of the head? At least three of four eligible pairs must rise.',
   needs: ['NPG Lite on battery', 'Three electrodes, either pregelled pads or gold cups with paste', 'A measuring tape', 'Desktop Chrome or Edge'],
   steps: [
-    { title: 'Place the electrodes', text: 'A0P at Oz, A0N behind the left ear, REF behind the right ear. Measure from nasion to inion, and Oz sits 10% up from the inion. Use intact skin and part the hair so the electrode touches the scalp.', tab: 'setup', tabLabel: 'Open the figures' },
-    { title: 'Remove the mains', text: 'Board and laptop on battery, nothing mains-powered touching the setup. Keep the laptop about a metre away and the cables still.' },
-    { title: 'Connect and look', text: 'Connect, start acquisition, wait for a trace. Clench your jaw once and you should see it. Fix anything that clips or stays flat.', tab: 'signal', tabLabel: 'Open the signal' },
-    { title: 'Baseline, then controls', text: 'A relaxed minute, then deliberate blinks and jaw contractions, so you know what those look like in your own setup.', protocol: 'artifact' },
-    { title: 'The long Berger test', text: 'Test the spoken cue, then follow it through four pairs of eyes open and closed, in a balanced, shuffled order. Stay still, and keep your eyes relaxed when they are closed.', protocol: 'berger' },
-    { title: 'Read and export', text: 'Results give closed over open alpha power for each pair. Mark any block you did not follow, then export the bundle. Recordings stay in this browser until exported.', tab: 'results', tabLabel: 'Open the results' },
+    { title: 'Place the electrodes', text: 'A0P at Oz, A0N behind the left ear, REF behind the right ear. Measure from nasion to inion, and Oz sits 10% up from the inion. Use intact skin and part the hair so the electrode touches the scalp.', tab: 'setup', tabLabel: 'Open the figures', visual: 'placement' },
+    { title: 'Remove the mains', text: 'Board and laptop on battery, nothing mains-powered touching the setup. Keep the laptop about a metre away and the cables still. Use desktop Chrome or Edge, which can reach the board over Bluetooth.', visual: 'mains' },
+    { title: 'Connect and check the signal', text: 'Connect, start acquisition, wait for a trace. Clench your jaw once and you should see it. Fix anything that clips or stays flat. The Berger test stays locked until the signal is clean.', tab: 'signal', tabLabel: 'Open the signal', visual: 'signal' },
+    { title: 'Baseline, then controls', text: 'A relaxed minute, then deliberate blinks and jaw contractions, so you know what those look like in your own setup.', protocol: 'artifact', protocols: ['baseline', 'artifact'] },
+    { title: 'The long Berger test', text: 'Follow the voice through four pairs of eyes open and closed, in a balanced, shuffled order. Sit still with a loose jaw and relaxed eyes. Live numbers are hidden during the run unless you choose otherwise, so they cannot steer you.', protocol: 'berger' },
+    { title: 'Confirm and read', text: 'Mark each block you followed and each one you did not. A block the app has excluded stays excluded. The result is one ratio per pair, closed over open alpha power.', tab: 'results', tabLabel: 'Open the results', visual: 'results' },
+    { title: 'Export', text: 'The bundle holds the raw samples, the analysis windows, the events and a checksum for every file. Recordings stay in this browser until exported, and the report page reopens a bundle without the board.', visual: 'bundle' },
   ],
   protocols: {
     baseline: { purpose: 'A quality check before anything else: one still minute with the eyes open.' },

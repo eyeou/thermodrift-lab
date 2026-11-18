@@ -66,16 +66,12 @@ test('care: one line, for the long format only', () => {
   assert.equal(SESSION_FORMATS[SHORT].care, undefined);
 });
 
-test('protocols: rests and the signal check do not depend on the format', () => {
-  assert.deepEqual(protocolEntries().map((e) => e.name), ['breath-check', 'rest-before', 'rest-after']);
+test('protocols: the signal check does not depend on the format', () => {
+  assert.deepEqual(protocolEntries().map((e) => e.name), ['breath-check']);
   assert.equal(protocolEntries.length, 0, 'protocol entries take no format');
-  const [check, before, , after] = [...sessionTimeline(LONG).map((g) => g.parts)];
+  const [check] = [...sessionTimeline(LONG).map((g) => g.parts)];
   assert.deepEqual(check, [{ kind: 'plain', seconds: plannedSeconds(breathSignalCheckProtocol()) }]);
-  assert.deepEqual(before, [{ kind: 'plain', seconds: plannedSeconds(breathRestProtocol('before')) }]);
-  assert.deepEqual(after, [{ kind: 'plain', seconds: plannedSeconds(breathRestProtocol('after')) }]);
   assert.deepEqual(sessionTimeline(SHORT)[0], sessionTimeline(LONG)[0]);
-  assert.deepEqual(sessionTimeline(SHORT)[1], sessionTimeline(LONG)[1]);
-  assert.deepEqual(sessionTimeline(SHORT)[3], sessionTimeline(LONG)[3]);
 });
 
 test('timeline: drawn for both formats and any width, and in order', () => {
@@ -88,7 +84,7 @@ test('timeline: drawn for both formats and any width, and in order', () => {
       for (const { label } of format.key) assert.ok(svg.includes(`>${label}<`), `${id}: ${label}`);
       assert.match(svg, /Planned lengths, not a recording/);
       const rects = [...svg.matchAll(/<rect x="([\d.]+)" y="[\d.]+" width="[\d.]+" height="(?:18|22)"/g)].map((m) => Number(m[1]));
-      assert.equal(rects.length, 3 + format.parts.length, 'check, rest, every part of the session, rest');
+      assert.equal(rects.length, 1 + format.parts.length, 'check, every part of the session');
       assert.deepEqual(rects, [...rects].sort((a, b) => a - b));
       assert.ok(Math.max(...rects) < width);
     }
@@ -109,8 +105,6 @@ test('keys and cues: the short format records what it always did, the long one n
   assert.match(SESSION_FORMATS[LONG].keys, /V music start/);
   assert.match(SESSION_FORMATS[LONG].keys, /R recovery start/);
   for (const name of Object.keys(BREATH_COMPLETION_CUES)) assert.equal(completionCue(name, SHORT), BREATH_COMPLETION_CUES[name], name);
-  assert.match(completionCue('rest-before', LONG), /music/);
-  assert.equal(completionCue('rest-after', LONG), BREATH_COMPLETION_CUES['rest-after']);
   assert.equal(completionCue('no-such-protocol', LONG), undefined);
 });
 

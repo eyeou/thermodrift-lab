@@ -7,8 +7,9 @@ import { h, uid } from '../dom.js';
 /**
  * @param {{label:string, tabs:{id:string, title:string, index?:string, panel:Node}[], initial?:string, hash?:boolean, aside?:Node, className?:string, rail?:Node, railOn?:string[]}} options
  * rail: a side panel kept beside the panels of the tabs named in railOn.
+ * onSelect: called with the id of the tab that opens.
  */
-export function createTabs({ label, tabs, initial, hash = false, aside = null, className = '', rail = null, railOn = [] }) {
+export function createTabs({ label, tabs, initial, hash = false, aside = null, className = '', rail = null, railOn = [], onSelect = null }) {
   const base = uid('tabs');
   const items = new Map();
   let current = null;
@@ -28,7 +29,10 @@ export function createTabs({ label, tabs, initial, hash = false, aside = null, c
     if (rail) {
       rail.hidden = !railOn.includes(id);
       workspace.dataset.rail = rail.hidden ? 'off' : 'on';
+      workspace.dataset.tab = id;
     }
+    onSelect?.(id);
+    keepInView(next.button);
     if (focus) next.button.focus();
     if (hash && updateHash && location.hash !== `#${id}`) history.replaceState(null, '', `#${id}`);
     return true;
@@ -47,7 +51,23 @@ export function createTabs({ label, tabs, initial, hash = false, aside = null, c
     panels.append(panel);
     items.set(tab.id, { id: tab.id, button, panel });
   }
-  if (aside) list.append(h('span', { class: 'td-spacer' }), aside);
+  // With a live line beside them, the tabs and the line share a bar; on a phone the line drops under the tabs.
+  const bar = aside ? h('div', { class: 'td-tabbar' }, list, aside) : list;
+
+  // On a narrow screen the row of tabs scrolls sideways: the chosen tab stays in view, and a cut edge fades.
+  function keepInView(button) {
+    if (list.scrollWidth <= list.clientWidth) return;
+    const left = button.offsetLeft - list.offsetLeft, right = left + button.offsetWidth;
+    if (left < list.scrollLeft) list.scrollLeft = left - 16;
+    else if (right > list.scrollLeft + list.clientWidth) list.scrollLeft = right - list.clientWidth + 16;
+  }
+  const markEdges = () => {
+    const start = list.scrollLeft > 2, end = list.scrollLeft + list.clientWidth < list.scrollWidth - 2;
+    const more = start && end ? 'both' : start ? 'start' : end ? 'end' : '';
+    if (more) list.dataset.more = more; else delete list.dataset.more;
+  };
+  list.addEventListener('scroll', markEdges, { passive: true });
+  if (globalThis.ResizeObserver) new ResizeObserver(markEdges).observe(list);
 
   list.addEventListener('keydown', (event) => {
     const ids = [...items.keys()];
@@ -65,5 +85,5 @@ export function createTabs({ label, tabs, initial, hash = false, aside = null, c
   if (select(fromHash(), { updateHash: false })) setTimeout(reveal, 400);
   else select(initial ?? tabs[0]?.id, { updateHash: false });
 
-  return { el: h('div', { class: `td-tabs ${className}`.trim() }, list, workspace), select, get current() { return current?.id; } };
+  return { el: h('div', { class: `td-tabs ${className}`.trim() }, bar, workspace), select, get current() { return current?.id; } };
 }

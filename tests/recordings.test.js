@@ -135,8 +135,8 @@ test('blocks and protocols follow their recording', async () => {
   c.testCue();
   h.feed(1000);
   c.confirmCueHeard(true);
-  const [, rest] = protocolEntries();
-  assert.equal((await c.startProtocol(rest.create(), { requireCueCheck: true, requireSpeech: true })).ok, true);
+  const [check] = protocolEntries();
+  assert.equal((await c.startProtocol(check.create(), { requireCueCheck: true, requireSpeech: true })).ok, true);
   let guard = 0;
   while (c.protocol.running && guard++ < 20000) h.feed(20);
   await h.settle();
@@ -145,10 +145,10 @@ test('blocks and protocols follow their recording', async () => {
   const two = await unzip((sink) => c.exportBundle(sink, { segmentId: 2 }));
   assert.equal(one.meta.protocols.length, 0);
   assert.equal(one.meta.blocks.length, 0);
-  assert.deepEqual(two.meta.protocols.map((p) => p.name), ['rest-before']);
+  assert.deepEqual(two.meta.protocols.map((p) => p.name), ['breath-check']);
   assert.ok(two.meta.blocks.length > 0);
   const list = recordingSummaries({ ...c.session, segments: c.segments, protocols: c.protocol.protocols });
-  assert.deepEqual(list.map((r) => r.protocols.map((p) => p.name)), [[], ['rest-before']]);
+  assert.deepEqual(list.map((r) => r.protocols.map((p) => p.name)), [[], ['breath-check']]);
 });
 
 test('a test flag deletes nothing and travels with the file', async () => {

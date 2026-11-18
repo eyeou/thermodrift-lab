@@ -153,6 +153,27 @@ export class LabController {
     }
   }
 
+  /** Back to the same device after a lost link, without the chooser. @returns {Promise<boolean>} */
+  async reconnect() {
+    if (this.connection === 'connecting' || this.connection === 'connected' || !this.deps.transport.reconnect) return false;
+    this.connection = 'connecting';
+    this.emit();
+    try {
+      const info = await this.deps.transport.reconnect();
+      this.deviceName = info.deviceName;
+      this.connection = 'connected';
+      this.connectionError = null;
+      this.log('device_reconnected', { device: info.deviceName });
+      return true;
+    } catch (error) {
+      this.connection = 'disconnected';
+      this.connectionError = error.message;
+      return false;
+    } finally {
+      this.emit();
+    }
+  }
+
   async disconnect() {
     if (this.acquisition === 'acquiring') await this.stopAcquisition('Disconnected by operator');
     await this.deps.transport.disconnect();

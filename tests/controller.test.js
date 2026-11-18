@@ -87,7 +87,7 @@ test('full Berger flow: gates, 560 s protocol, auto-stop, adherence, export roun
   assert.ok(c.locked, 'setup locked after first acquisition');
   h.feed(5000);
   assert.ok(c.engine.latest[0], 'a 2048-sample window exists after ~4.1 s');
-  assert.equal(controlStates(c, ui(c)).protocols.berger.why, 'Test the spoken cue and confirm you heard it.');
+  assert.equal(controlStates(c, ui(c)).protocols.berger.enabled, true, 'the cue check is optional in the app');
   let refused = await c.startProtocol(bergerLongProtocol(), { requireCueCheck: true, requireCleanSignal: true });
   assert.equal(refused.ok, false);
   c.testCue();

@@ -1,7 +1,7 @@
 /**
  * Breathwork 0.2 — live acquisition surface for breathing sessions: ECG, EEG, EOG and EMG on an NPG
- * Lite. A signal check, then a rest before and an identical rest after a guided session that runs
- * outside the app while acquisition continues, marked with keys.
+ * Lite. A signal check, then a guided session that runs outside the app while acquisition
+ * continues, marked with keys.
  * Saved sessions open in ../report/, which never connects to hardware.
  *
  *   ?source=simulated   on a local server only: synthetic test pattern + silent cues (labelled everywhere)
@@ -13,11 +13,13 @@ import { createCanvas, drawStack, drawTrace, drawSpectrum } from '../../src/ui/c
 import { restCard, svgHost } from '../../src/ui/charts/report.js';
 import { placementSvg, placementViews } from '../../src/ui/components/placement.js';
 import { createTabs } from '../../src/ui/components/tabs.js';
-import { createProtocolGuide } from '../../src/ui/components/protocol-guide.js';
+import { createProtocolGuide, needsList } from '../../src/ui/components/protocol-guide.js';
 import { createSegmented } from '../../src/ui/components/segmented.js';
 import { sessionTimelineSvg } from '../../src/ui/components/session-timeline.js';
 import { BREATHWORK_EXAMPLES, exampleButton, exampleView } from '../../src/ui/components/example-results.js';
+import { bundleStage, mainsFigure, placementStage, signalFigure } from '../../src/ui/components/guide-figures.js';
 import { LabController } from '../../src/lab/controller.js';
+import { deviceBadge } from '../../src/ui/components/device-badge.js';
 import { controlStates, protocolCard, statusItems, sharedReason } from '../../src/lab/viewmodel.js';
 import { BergerV3WindowEngine } from '../../src/analysis/berger-v3.js';
 import { assessRawWindow, WARNINGS } from '../../src/core/quality.js';
@@ -28,6 +30,10 @@ import { createNpgBleTransport } from '../../src/transport/npg-ble.js';
 import { createSimulatedTransport } from '../../src/transport/simulated.js';
 import { createSpeechCues, createSilentCues } from '../../src/protocol/cues.js';
 import { createSessionLocks, recoverAbandonedSessions } from '../../src/lab/locks.js';
+import { StatusMonitor } from '../../src/lab/status-monitor.js';
+import { createDiskMirror } from '../../src/session/disk-mirror.js';
+import { buttonAction, parseButton } from './button.js';
+import { GREEN, ORANGE, RED } from '../../src/core/live-status.js';
 import { saveBundle } from '../../src/ui/save-bundle.js';
 import { bundleStem, latestRecording, lengthText, recordingSummaries } from '../../src/session/recordings.js';
 import { APP, MONTAGES, DEFAULT_MONTAGE, MAX_CHANNELS, EEG_CHANNEL, TRACE_RANGE, channelLabel, channelKind, blockName, protocolEntries, describeBreathworkSession, breathBlockSummary, restComparison, SESSION_FORMATS, DEFAULT_SESSION_FORMAT, guideFor, sessionTimeline, markerNote, completionCue } from './config.js';
@@ -56,6 +62,19 @@ const ui = {
   refusals: new Map(),
   markers: [],
   protocolSignature: '',
+  armed: false,
+  exportedSession: null,
+  boardBattery: null,
+  batteryAlerted: new Set(),
+  firmware: null,
+  buttonPresses: 0,
+  videoRunning: false,
+  lastButton: '',
+  boardTestUntil: 0,
+  reconnecting: false,
+  reconnectAttempts: 0,
+  distanceOpen: false,
+  macBattery: null,
 };
 
 // ---------------------------------------------------------------- infrastructure
@@ -76,8 +95,18 @@ const cues = simulated ? createSilentCues('simulated session') : createSpeechCue
  * Display pipeline (display only; the analysis path is fixed). The selected view filters the live
  * channel; raw rings of every channel feed the per-channel quality chips.
  */
-function createDisplay() {
+/** Short spoken name of a channel: 'Cz', 'neck EMG'. */
+function voiceName(name) {
+  const [kind, site = ''] = name.split(' · ');
+  if (/sternocleidomastoid|neck/i.test(site)) return 'neck EMG';
+  if (/trapezius|shoulder/i.test(site)) return 'shoulder EMG';
+  const eeg = /^(Oz|Cz|Fpz)/.exec(site);
+  return eeg ? eeg[1] : kind;
+}
+
+function createDisplay(_montage = null, { keepStatus = false } = {}) {
   const { view, notch, liveChannel } = ui;
+  if (!keepStatus) { const m = MONTAGES[ui.montageId]; monitor.configure(m.channelKinds, m.channelNames.map(voiceName)); monitor.reset(); }
   const make = () => (view === 'raw' ? null : createDisplayProcessor(view, { notch50: notch !== 'off', harmonics: notch === '50h' }));
   let proc = make();
   const emptyRings = () => Array.from({ length: MAX_CHANNELS }, () => []);
@@ -94,8 +123,10 @@ function createDisplay() {
         if (rings[ch].length > RAW_SAMPLES) rings[ch].shift();
       }
       count++;
+      mirror.row(controller.session?.id, row);
+      monitor.push(row);
     },
-    reset() { proc = make(); rings = emptyRings(); metrics = rings.map(() => null); metricsAt = -Infinity; },
+    reset() { monitor.gap(); proc = make(); rings = emptyRings(); metrics = rings.map(() => null); metricsAt = -Infinity; },
     get proc() { return proc; },
     raw(ch) { return rings[ch]; },
     /** Raw-window metrics per channel (4.1 s), recomputed at most every 250 samples. */
@@ -130,28 +161,47 @@ const controller = new LabController({
   },
 });
 window.__breathworkLab = controller; // DevTools inspection only
+const mirror = createDiskMirror();
+if (location.hostname === '127.0.0.1') mirror.probe();
+const loggedEvent = controller.log.bind(controller);
+controller.log = (label, payload) => {
+  const event = loggedEvent(label, payload);
+  mirror.event(controller.session?.id, event);
+  return event;
+};
+const monitor = new StatusMonitor({
+  channels: MAX_CHANNELS,
+  onEvaluate: () => sendBoardPattern(),
+  log: (label, payload) => controller.log(label, payload),
+  // Board feedback (Thermodrift firmware): buzzer and motor on sustained alerts, buzzer on setup problems.
+  onAlert: (level) => boardFeedback(level === 'red' ? 2 : 1, `alert_${level}`),
+  onAnnounce: (said) => { if (said.some((s) => s.level !== GREEN)) boardFeedback(1, 'setup_problem', { vibrate: false }); },
+});
+window.__breathworkStatus = monitor;
 
 // ---------------------------------------------------------------- header, notices, status
 const sessionLabel = h('span', { class: 'td-caption td-mono', text: 'No session yet' });
+const sourceBadge = deviceBadge({ simulated });
 root.append(h('header', { class: 'td-header' },
   brand({ href: '../', logo: '../../brand/thermodrift-logo.png' }),
-  appName(APP.name, `v${APP.version} · ECG, EEG, EOG and EMG around a breathing session`),
+  appName(APP.name),
   h('span', { class: 'td-spacer' }),
-  h('span', { class: 'td-source', dataset: { kind: simulated ? 'simulated' : 'ble' } }, statusIcon(simulated ? 'simulated' : 'live'), simulated ? 'Simulated test pattern' : 'NPG Lite · Bluetooth'),
+  sourceBadge.el,
   sessionLabel));
 const notices = h('div');
 root.append(notices);
 if (storeWarning) notices.append(h('p', { class: 'bl-notice', text: storeWarning }));
-if (recovered.length) notices.append(h('p', { class: 'bl-notice' }, `${recovered.length} earlier session${recovered.length > 1 ? 's were' : ' was'} left open by a closed tab; marked interrupted, data kept. `, h('a', { href: '../', text: 'Sessions' })));
+if (recovered.length) notices.append(h('p', { class: 'bl-notice' }, `${recovered.length} earlier session${recovered.length > 1 ? 's were' : ' was'} left open by a closed tab; marked interrupted, data kept. To save it: `, h('a', { href: '../', text: 'Sessions' }), ' → Report → Export bundle.'));
 const statusStrip = h('div', { class: 'td-status-strip', role: 'status', 'aria-label': 'Acquisition status' });
 root.append(statusStrip);
 
 // ---------------------------------------------------------------- transport bar
+const distanceButton = h('button', { type: 'button', class: 'td-btn td-btn--light', title: 'Big lights to read from across the room (key L, Esc to close)', onclick: () => openDistance() }, 'Distance view');
 const buttons = {
   connect: actionButton({ className: 'td-btn td-btn--primary', onClick: () => controller.connect() }),
   start: actionButton({ onClick: () => startAcquisition() }),
-  stop: actionButton({ onClick: () => controller.stopAcquisition() }),
-  disconnect: actionButton({ onClick: () => controller.disconnect() }),
+  stop: actionButton({ onClick: () => { ui.armed = false; controller.stopAcquisition(); } }),
+  disconnect: actionButton({ onClick: () => { ui.armed = false; controller.disconnect(); } }),
   finish: actionButton({ onClick: () => finishSession() }),
   newSession: actionButton({ onClick: () => newSession() }),
   export: actionButton({ onClick: () => exportBundle() }),
@@ -159,14 +209,19 @@ const buttons = {
 const exportStatus = h('p', { class: 'bl-export-status', role: 'status' });
 const reportLink = h('a', { class: 'td-btn td-btn--light bl-report-link', hidden: true }, 'Open report');
 root.append(h('div', { class: 'bl-transport', role: 'toolbar', 'aria-label': 'Acquisition controls' },
-  buttons.connect.el, buttons.start.el, buttons.stop.el, buttons.disconnect.el,
+  buttons.connect.el, buttons.start.el, buttons.stop.el, buttons.disconnect.el, distanceButton,
   h('span', { class: 'td-spacer' }),
   buttons.finish.el, buttons.newSession.el, buttons.export.el, reportLink, exportStatus));
 
 // ---------------------------------------------------------------- 01 setup
 const select = (options, value) => h('select', {}, ...options.map(([v, t]) => h('option', { value: v, text: t, selected: String(v) === String(value) })));
 const montageSelect = select(Object.values(MONTAGES).map((m) => [m.id, m.label]), ui.montageId);
-const montageFigure = h('div', { class: 'td-plates', role: 'group', tabindex: '0', 'aria-label': 'Electrode placement figures' });
+const montageFigure = h('div', { class: 'td-plates', role: 'group', 'aria-label': 'Electrode placement figures' });
+// Up to a tablet the plates show one at a time, chosen by name; on a phone with larger pins and the
+// site names left to the lead list. A wider screen shows them side by side.
+const platesOne = globalThis.matchMedia?.('(max-width: 980px)');
+const platesPhone = globalThis.matchMedia?.('(max-width: 640px)');
+for (const query of [platesOne, platesPhone]) query?.addEventListener?.('change', () => renderMontage());
 const leadList = h('div', { class: 'td-lead-list' });
 const montageNotes = h('p', { class: 'td-caption' });
 const checks = { battery_only: h('input', { type: 'checkbox' }), contact: h('input', { type: 'checkbox' }), routing: h('input', { type: 'checkbox' }) };
@@ -184,10 +239,13 @@ const panel = (index, title, kicker, ...body) => h('section', { class: 'td-panel
   h('header', {}, h('h2', {}, h('span', { class: 'td-index', text: index }), title), kicker ? h('span', { class: 'td-kicker', text: kicker }) : null),
   h('div', { class: 'td-body' }, ...body));
 
+const needsHost = h('div');
+const paintNeeds = (formatId) => needsHost.replaceChildren(needsList(guideFor(formatId).needs));
+paintNeeds(ui.sessionFormat);
 const setupPanel = panel('01', 'Setup', null,
   field('Montage', montageSelect), montageFigure,
   h('div', { class: 'td-setup-columns' },
-    h('div', {}, leadList, montageNotes),
+    h('div', { class: 'td-setup-left' }, leadList, montageNotes, needsHost),
     h('div', {},
       h('div', { class: 'bl-protocol-settings' }, field('Electrodes', padSelect), field('Position', positionSelect)),
       field('Condition (goes in the file name)', conditionSelect),
@@ -201,6 +259,39 @@ const setupPanel = panel('01', 'Setup', null,
       lockedNote)));
 
 // ---------------------------------------------------------------- 02 signal
+// Live status lights: connection checks per channel, plus checks adapted to the signal kind.
+const statusLamps = h('div', { class: 'bw-lamps', role: 'group', 'aria-label': 'Live status per channel' });
+const bigLamps = h('div', { class: 'bw-big-lamps' });
+const modeHelp = { setup: 'Setup: a voice names any channel that changes and holds 4 s.', session: 'Session: one tone only when a problem lasts (red 20 s, orange 60 s); a soft tick every 5 min means the app is alive.', silent: 'Silent: lights only.' };
+const modeCaption = h('p', { class: 'td-caption' });
+const makeModeControl = () => createSegmented({ label: 'Status sounds', options: [{ value: 'setup', label: 'Setup · voice' }, { value: 'session', label: 'Session · tones' }, { value: 'silent', label: 'Silent' }], value: monitor.mode, onChange: (v) => setStatusMode(v) });
+const modeControl = makeModeControl();
+const bigModeControl = makeModeControl();
+const boardChecks = { lights: h('input', { type: 'checkbox', checked: true }), buzzer: h('input', { type: 'checkbox', checked: true }), vibrate: h('input', { type: 'checkbox', checked: false }) };
+const boardNote = h('span', { class: 'td-caption' });
+const boardInfo = h('p', { class: 'td-caption bw-board-info' });
+const bigBoard = h('p', { class: 'bw-big-info' });
+const boardRow = h('div', { class: 'bw-board' },
+  h('strong', { text: 'NPG Beast' }),
+  h('label', { class: 'td-check' }, boardChecks.lights, h('span', { text: 'LEDs show the six lights' })),
+  h('label', { class: 'td-check' }, boardChecks.buzzer, h('span', { text: 'Buzzer on alerts' })),
+  h('label', { class: 'td-check' }, boardChecks.vibrate, h('span', { text: 'Vibration on alerts (motor sits near the leads)' })),
+  h('button', { type: 'button', class: 'td-btn td-btn--light', onclick: () => testBoard() }, 'Test board'),
+  h('span', { class: 'td-caption', text: 'Button: 1 click marker · 2 clicks video or music start, then end' }),
+  boardNote);
+const statusRow = h('div', { class: 'bw-status' }, h('div', { class: 'bw-status-head' }, h('strong', { text: 'Live status' }), modeControl.el, h('button', { type: 'button', class: 'td-btn td-btn--light', onclick: () => openDistance() }, 'Distance view')), statusLamps, boardRow, boardInfo, modeCaption);
+const bigInfo = h('p', { class: 'bw-big-info' });
+const bigAlerts = h('p', { class: 'bw-big-alerts' });
+const distance = h('div', { class: 'bw-distance', hidden: true, role: 'dialog', 'aria-label': 'Live status, distance view' },
+  h('div', { class: 'bw-big-head' }, h('strong', { text: 'Live status' }), bigModeControl.el, h('span', { class: 'td-spacer' }), h('button', { type: 'button', class: 'td-btn td-btn--light', onclick: () => closeDistance() }, 'Close (Esc)')),
+  bigLamps, bigInfo, bigBoard, bigAlerts);
+document.body.append(distance);
+function setStatusMode(mode) {
+  monitor.setMode(mode);
+  for (const c of [modeControl, bigModeControl]) for (const input of c.inputs) input.checked = input.value === mode;
+  render();
+}
+
 const channelChips = h('div', { class: 'bw-chips', role: 'group', 'aria-label': 'Raw quality per channel' });
 const viewSelect = select([['eeg', 'Filtered · 0.5–45 Hz'], ['chords', 'Reference · 0.1–90 Hz'], ['raw', 'Raw + Welch PSD']], ui.view);
 const notchSelect = select([['50h', '50 Hz + harmonics'], ['50', '50 Hz only'], ['off', 'Off']], ui.notch);
@@ -229,6 +320,7 @@ const layoutControl = createSegmented({
   onChange: (value) => setSignalLayout(value),
 });
 const signalPanel = panel('02', 'Signal', 'Display only',
+  statusRow,
   layoutControl.el,
   channelChips,
   viewControls,
@@ -271,11 +363,19 @@ const formatBlock = h('div', { class: 'td-format' },
   h('p', { class: 'td-caption', text: 'The planned order, to scale. Inside the session your guide sets the pace, so those lengths are approximate.' }),
   formatCare);
 const tabLive = h('span', { class: 'td-tab-live', role: 'status' });
-const guideView = createProtocolGuide({ guide: guideFor(ui.sessionFormat), blockName, goToTab: (id) => mainTabs.select(id), intro: formatBlock });
+const guideVisuals = {
+  placement: () => placementStage(currentMontage().leads),
+  mains: () => mainsFigure({ distance: 'at least 1 m', mat: true }),
+  signal: () => signalFigure('body'),
+  session: () => h('figure', { class: 'td-stage-figure' }, svgHost((width) => sessionTimelineSvg(sessionTimeline(ui.sessionFormat), SESSION_FORMATS[ui.sessionFormat].key, { width }), 380).el,
+    h('figcaption', { class: 'td-caption', text: 'The planned order, to scale. Your guide sets the pace inside the session.' })),
+  bundle: () => bundleStage(),
+};
+const guideView = createProtocolGuide({ guide: guideFor(ui.sessionFormat), blockName, goToTab: (id) => mainTabs.select(id), intro: formatBlock, visuals: guideVisuals });
 const protocolReason = h('p', { class: 'td-why', role: 'status', hidden: true });
+const cueField = h('div', { class: 'td-field td-cue-field' }, h('span', { text: 'Spoken cues (optional check)' }), cueButton.el,
+  h('label', { class: 'td-check' }, heardCheck, h('span', { text: 'I heard it clearly' })), heardWhy);
 const protocolLauncher = h('div', { class: 'td-protocol-run' },
-  h('div', { class: 'td-field' }, h('span', { text: 'Spoken cues' }), cueButton.el,
-    h('label', { class: 'td-check' }, heardCheck, h('span', { text: 'I heard it clearly' })), heardWhy),
   protocolList);
 const protocolPanel = panel('03', 'Protocol', null, guideView.el);
 const runPanel = h('aside', { class: 'td-panel td-rail', 'aria-label': 'Run a protocol' },
@@ -284,7 +384,7 @@ const runPanel = h('aside', { class: 'td-panel td-rail', 'aria-label': 'Run a pr
     h('div', { class: 'td-field' }, h('span', { text: 'Markers (movement, noise, phases of the session)' }),
       h('div', { class: 'bl-marker-row' }, markerInput, markerButton.el),
       keysCaption,
-      markerList)));
+      markerList), cueField));
 
 // ---------------------------------------------------------------- 04 results
 const resultsBody = h('div', { class: 'td-body' });
@@ -316,6 +416,7 @@ const mainTabs = createTabs({
   ],
 });
 root.append(h('main', { class: 'td-main td-main--tabs' }, mainTabs.el));
+guideView.mountRail(runPanel);
 
 // ---------------------------------------------------------------- setup wiring
 const currentMontage = () => MONTAGES[ui.montageId];
@@ -349,10 +450,12 @@ function pushSetup() {
 const chipRefs = [];
 function renderMontage() {
   const m = currentMontage();
-  montageFigure.replaceChildren(...placementViews(m.leads).map((view) => h('figure', { class: 'td-plate', html: placementSvg(view, m.leads) })));
+  montageFigure.replaceChildren(...(platesOne?.matches ? [placementStage(m.leads, { list: false, compact: !!platesPhone?.matches })]
+    : placementViews(m.leads).map((view) => h('figure', { class: 'td-plate', html: placementSvg(view, m.leads) }))));
   leadList.replaceChildren(...m.leads.map((l) => h('div', { class: 'td-lead' }, h('i', { style: `background:${l.cableColor}` }), h('strong', { text: l.pin }), h('span', { text: [l.siteLabel, l.electrode, l.cable ? `${l.cable} cable` : null, l.role].filter(Boolean).join(' · ') }))));
   setText(montageNotes, m.notes);
   setText(routingText, `Wiring checked: ${m.routingCheck}`);
+  guideView.refreshVisual();
   if (ui.liveChannel >= m.requiredChannels) ui.liveChannel = 0;
   chipRefs.length = 0;
   channelChips.replaceChildren(...m.channelNames.map((name, ch) => {
@@ -373,6 +476,7 @@ function renderFormat() {
   setText(runFormat, format.label);
   setText(keysCaption, format.keys);
   guideView.setGuide(guideFor(format.id));
+  paintNeeds(format.id);
 }
 
 function chooseFormat(id) {
@@ -422,7 +526,7 @@ audioNotes.oninput = () => { ui.setup.audio_notes = audioNotes.value; pushSetup(
 function changeDisplay() {
   if (controller.protocol.running) return;
   if (controller.display) {
-    controller.display = createDisplay();
+    controller.display = createDisplay(null, { keepStatus: true });
     controller.log('display_processing_change', controller.display.describe());
   }
   render({ charts: true });
@@ -467,6 +571,9 @@ async function newSession() {
   heardCheck.checked = false;
   reportLink.hidden = true;
   ui.markers = [];
+  ui.videoRunning = false;
+  ui.buttonPresses = 0;
+  ui.lastButton = '';
   ui.refusals.clear();
   setExportStatus('');
   pushSetup();
@@ -489,9 +596,12 @@ document.addEventListener('keydown', (event) => {
   const t = event.target;
   const typing = t instanceof HTMLElement && (t.isContentEditable || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || (t.tagName === 'INPUT' && !['checkbox', 'radio', 'button'].includes(t.type)));
   if (typing) return;
+  if (event.key === 'Escape' && ui.distanceOpen) { closeDistance(); return; }
+  if (event.key.toLowerCase() === 'l') { event.preventDefault(); if (ui.distanceOpen) closeDistance(); else openDistance(); return; }
   const note = markerNote(ui.sessionFormat, event.key.toLowerCase());
   if (!note || controller.acquisition !== 'acquiring') return;
   event.preventDefault();
+  if (event.key.toLowerCase() === 'v') ui.videoRunning = true;
   ui.markers.unshift(controller.mark(`${note} (key)`));
   render();
 });
@@ -499,6 +609,7 @@ document.addEventListener('keydown', (event) => {
 async function startProtocol(entry) {
   ui.refusals.delete(entry.name);
   guideView.show(entry.name);
+  if (monitor.mode === 'setup') setStatusMode('session'); // no voice over a rest or a session
   const result = await controller.startProtocol(entry.create(), { requireCueCheck: !!entry.requireCueCheck, requireCleanSignal: !!entry.requireCleanSignal, requireSpeech: !!entry.requireSpeech });
   if (!result.ok) ui.refusals.set(entry.name, `${result.reason} ${result.howTo ?? ''}`.trim());
   else { ui.refusals.clear(); resultsDirty = true; }
@@ -514,7 +625,8 @@ function setExportStatus(text, tone = 'idle') {
  * Called straight from the click: the save dialog must open before any other await. Exports one
  * recording, by default the latest; null exports the whole session in one file.
  */
-async function exportBundle(segmentId = latestRecording(controller.segments)?.id ?? null) {
+const defaultExportSegment = () => (controller.segments.some((s) => s.end_reason === 'device_disconnected') ? null : latestRecording(controller.segments)?.id ?? null);
+async function exportBundle(segmentId = defaultExportSegment()) {
   if (!controller.session) return;
   const segment = controller.segments.find((s) => s.id === segmentId) ?? null;
   const result = await saveBundle({
@@ -522,7 +634,10 @@ async function exportBundle(segmentId = latestRecording(controller.segments)?.id
     assemble: (sink, method) => controller.exportBundle(sink, { method, segmentId }),
     onStatus: setExportStatus,
   });
-  if (result) controller.log(result.method === 'file-picker' ? 'export_written' : 'export_download_requested', { filename: result.filename, method: result.method });
+  if (result) {
+    ui.exportedSession = controller.session.id;
+    controller.log(result.method === 'file-picker' ? 'export_written' : 'export_download_requested', { filename: result.filename, method: result.method });
+  }
 }
 
 // ---------------------------------------------------------------- rendering
@@ -542,13 +657,15 @@ setInterval(() => controller.tick(), 250);
 
 function paint(forceCharts) {
   const c = controller;
+  paintStatus();
   const entries = protocolEntries({ simulated });
   const states = controlStates(c, { missingSetup: missingSetup(), protocols: entries, deviceLabel: simulated ? 'simulator' : 'NPG', recordings: true });
   for (const [key, button] of Object.entries(buttons)) button.update(states[key]);
   const recordingCount = c.segments.length;
   setText(sessionLabel, c.session ? `Session of ${localDate(c.session.created_utc)}, ${localClock(c.session.created_utc)} · ${recordingCount} recording${recordingCount === 1 ? '' : 's'} · ${c.session.status}` : 'No session yet');
   sessionLabel.title = c.session?.id ?? '';
-  statusStrip.replaceChildren(...statusItems(c).map((item) => h('span', { class: 'td-status', dataset: { tone: item.tone }, title: item.detail ?? '' },
+  sourceBadge.update(c);
+  statusStrip.replaceChildren(...statusItems(c).filter((item) => item.tone === 'warning' || item.tone === 'error' || item.tone === 'stale').map((item) => h('span', { class: 'td-status', dataset: { tone: item.tone }, title: item.detail ?? '' },
     statusIcon(item.tone), h('span', { class: 'td-status-label', text: item.label }), h('span', { class: 'td-status-value', text: item.value }))));
 
   for (const el of setupFields) el.disabled = c.locked;
@@ -556,6 +673,7 @@ function paint(forceCharts) {
   for (const el of displayControls) el.disabled = c.protocol.running;
   lockedNote.hidden = !c.locked;
   formatWhy.hidden = !c.locked;
+  guideView.setDevice(c.connection === 'connected' || c.acquisition === 'acquiring' || c.protocol.running, c.protocol.running);
 
   // Protocol buttons are rebuilt only when their content changes, so focus survives renders.
   const signature = entries.map((e) => `${e.name}:${e.detail}`).join('|');
@@ -773,7 +891,7 @@ function renderResults() {
   const blocks = c.protocol.blocks;
   const m = currentMontage();
   if (!blocks.length) {
-    resultsBody.replaceChildren(h('p', { class: 'td-muted', text: 'Block summaries appear after the first protocol; the before/after table once both rests are recorded. Heart rate, breathing and muscle activity are analysed after export.' }), exampleButton(() => setExample(true)));
+    resultsBody.replaceChildren(h('p', { class: 'td-muted', text: 'Block summaries appear after the first protocol. Heart rate, breathing and muscle activity are analysed after export.' }), exampleButton(() => setExample(true)));
     return;
   }
   const focused = document.activeElement?.dataset?.block;
@@ -832,3 +950,257 @@ renderMontage();
 renderFormat();
 pushSetup();
 render({ charts: true });
+
+
+// ---------------------------------------------------------------- live status lights
+const LAMP = Object.freeze({
+  [GREEN]: { tone: 'green', word: 'GOOD' },
+  [ORANGE]: { tone: 'orange', word: 'CHECK' },
+  [RED]: { tone: 'red', word: 'NO SIGNAL' },
+});
+
+/** What one light shows, from the monitor plus link and montage state. */
+function lampState(i) {
+  const c = controller;
+  const m = currentMontage();
+  const kind = channelKind(m, i);
+  if (i >= m.requiredChannels || kind === 'unused') return { tone: 'off', word: 'NOT USED', reason: '', info: '' };
+  const acquiring = c.acquisition === 'acquiring';
+  const deviceChannels = c.recorder?.channelCount ?? null;
+  if (!acquiring) return ui.armed ? { tone: 'red', word: 'NO SIGNAL', reason: 'link lost', info: '' } : { tone: 'off', word: 'IDLE', reason: 'not acquiring', info: '' };
+  if (deviceChannels !== null && i >= deviceChannels) return { tone: 'red', word: 'NO SIGNAL', reason: 'not sent by the device', info: '' };
+  if (c.msSinceLastPacket > 2000) return { tone: 'red', word: 'NO SIGNAL', reason: 'no data', info: '' };
+  const s = monitor.state[i];
+  if (s.level === null) {
+    const filled = Math.min(10, Math.floor(monitor.rings[i].len / 500));
+    return { tone: 'wait', word: 'WAIT', reason: s.reasons[0] ?? `filling ${filled}/10 s`, info: '' };
+  }
+  const base = LAMP[s.level];
+  return { ...base, reason: s.reasons.join(' · '), info: s.info };
+}
+
+function lampEl(big) {
+  const dot = h('i', { class: 'bw-lamp-dot' });
+  const title = h('strong'), word = h('span', { class: 'bw-lamp-word' }), reason = h('span', { class: 'bw-lamp-reason' }), info = h('span', { class: 'bw-lamp-info' });
+  const el = h('div', { class: big ? 'bw-lamp bw-lamp--big' : 'bw-lamp' }, dot, h('div', { class: 'bw-lamp-text' }, title, word, reason, info));
+  return { el, title, word, reason, info };
+}
+const smallLampRefs = Array.from({ length: MAX_CHANNELS }, () => lampEl(false));
+const bigLampRefs = Array.from({ length: MAX_CHANNELS }, () => lampEl(true));
+statusLamps.replaceChildren(...smallLampRefs.map((r) => r.el));
+bigLamps.replaceChildren(...bigLampRefs.map((r) => r.el));
+
+function paintStatus() {
+  const m = currentMontage();
+  const states = Array.from({ length: MAX_CHANNELS }, (_, i) => lampState(i));
+  for (const refs of [smallLampRefs, bigLampRefs]) {
+    refs.forEach((r, i) => {
+      const st = states[i];
+      const kind = channelKind(m, i);
+      const site = (m.channelNames[i] ?? '').split(' · ')[1] ?? '';
+      r.el.dataset.tone = st.tone;
+      const big = refs === bigLampRefs;
+      setText(r.title, kind === 'unused' ? `${i + 1} · —` : big ? `${i + 1} · ${voiceName(m.channelNames[i] ?? '')}` : `${i + 1} · ${kind.toUpperCase()}${site ? ` · ${site}` : ''}`);
+      setText(r.word, st.word);
+      setText(r.reason, st.reason);
+      setText(r.info, st.info);
+      r.el.title = `${channelLabel(m, i)} · ${st.word}${st.reason ? ` · ${st.reason}` : ''}`;
+    });
+  }
+  setText(modeCaption, `${modeHelp[monitor.mode]} Green means connected, not clean. ECG checks beats, EEG also flags muscle (colour only, no sound), EOG and EMG check the connection: eye movements and tension are their signal.`);
+  const c = controller;
+  const battery = ui.macBattery ? ` · Mac battery ${Math.round(100 * ui.macBattery.level)}%${ui.macBattery.charging ? ', charging: unplug the charger for less mains noise' : ''}` : '';
+  setText(boardInfo, boardSummary());
+  setText(bigBoard, boardSummary());
+  setText(bigInfo, `${c.acquisition === 'acquiring' ? `Acquiring · ${Math.floor(monitor.time / 60)} min ${String(Math.floor(monitor.time % 60)).padStart(2, '0')} s` : 'Not acquiring'} · ${{ setup: 'setup sounds', session: 'session sounds', silent: 'silent' }[monitor.mode]}${battery}`);
+  const recent = monitor.alerts.slice(0, 3).map((a) => `${new Date(a.at).toLocaleTimeString('en-GB')} ch ${a.channel} ${a.level}`);
+  setText(bigAlerts, recent.length ? `Last sounds: ${recent.join(' · ')}` : '');
+}
+
+// Link watch and the wake lock run on their own clock: a lost link sends no packets to render on.
+let wakeLock = null;
+async function keepAwake(on) {
+  try {
+    if (on && !wakeLock && 'wakeLock' in navigator && document.visibilityState === 'visible') {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    } else if (!on && wakeLock) { await wakeLock.release(); wakeLock = null; }
+  } catch { wakeLock = null; }
+}
+setInterval(() => {
+  const c = controller;
+  const acquiring = c.acquisition === 'acquiring';
+  if (acquiring) { ui.acqSince ??= performance.now(); ui.armed = true; } else ui.acqSince = null;
+  // Finishing or starting a new session is not a lost link.
+  if (!c.session || c.session.status !== 'recording') ui.armed = false;
+  const settled = acquiring && performance.now() - ui.acqSince > 5000;
+  monitor.watchLink({ acquiring: settled, msSinceLastPacket: c.msSinceLastPacket, disconnectedWhileArmed: ui.armed && !acquiring && c.connection !== 'connected' });
+  keepAwake(c.acquisition === 'acquiring' || ui.distanceOpen);
+  tryReconnect();
+  if (c.acquisition !== 'acquiring') mirror.flush(); // the last rows and the events after a stop have no packet to carry them
+  render();
+}, 1000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') wakeLock = null; });
+// Any first click unlocks Web Audio, so the first alert is never swallowed.
+document.addEventListener('pointerdown', () => monitor.tones.unlock?.(), { once: true });
+navigator.getBattery?.().then((b) => {
+  const upd = () => { ui.macBattery = { level: b.level, charging: b.charging }; render(); };
+  upd(); b.addEventListener('levelchange', upd); b.addEventListener('chargingchange', upd);
+}).catch(() => {});
+
+function openDistance() {
+  ui.distanceOpen = true;
+  distance.hidden = false;
+  monitor.tones.unlock?.();
+  distance.requestFullscreen?.().catch(() => {});
+  controller.log('distance_view', { open: true });
+  render();
+}
+function closeDistance() {
+  ui.distanceOpen = false;
+  distance.hidden = true;
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  controller.log('distance_view', { open: false });
+  render();
+}
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && ui.distanceOpen) closeDistance(); });
+
+
+// ---------------------------------------------------------------- NPG Beast feedback (Thermodrift firmware)
+const LETTER = Object.freeze({ green: 'G', orange: 'O', red: 'R', wait: 'B', off: 'X' });
+function boardPattern() {
+  return 'Q' + Array.from({ length: MAX_CHANNELS }, (_, i) => LETTER[lampState(i).tone] ?? 'X').join('');
+}
+async function boardSend(text) {
+  const t = controller.deps?.transport ?? transport;
+  if (!t.command) return false;
+  return t.command(text);
+}
+/** n: 1 orange, 2 red. Buzzer and motor are stimuli: each one is logged with its time. */
+function boardFeedback(n, why, { vibrate = true } = {}) {
+  const sent = [];
+  if (boardChecks.buzzer.checked) { boardSend(`BZ${n}`); sent.push(`BZ${n}`); }
+  if (vibrate && boardChecks.vibrate.checked) { boardSend(`VB${n}`); sent.push(`VB${n}`); }
+  if (sent.length) controller.log('board_feedback', { commands: sent, why, t_s: Math.round(monitor.time) });
+}
+async function testBoard() {
+  ui.boardTestUntil = performance.now() + 8000;
+  const ok = await boardSend('QGORBXG');
+  if (boardChecks.buzzer.checked) await boardSend('BZ1');
+  if (boardChecks.vibrate.checked) await boardSend('VB1');
+  controller.log('board_feedback', { commands: ['QGORBXG', 'BZ1'], why: 'test' });
+  setText(boardNote, ok ? 'Sent: LEDs read green, orange, red, blue, off, green for 8 s. Nothing on the board means the stock firmware.' : 'Not connected to an NPG (or simulator): nothing sent.');
+}
+/** Called on every status evaluation (2 s of samples). The firmware clears the LEDs after 15 s of silence, so a stopped stream never leaves a stale green. */
+function sendBoardPattern() {
+  if (!boardChecks.lights.checked || controller.connection !== 'connected' || controller.acquisition !== 'acquiring') return;
+  if (performance.now() < ui.boardTestUntil) return;
+  boardSend(boardPattern());
+}
+boardChecks.lights.onchange = () => { if (!boardChecks.lights.checked) boardSend('QXXXXXX'); controller.log('board_feedback_settings', { lights: boardChecks.lights.checked }); };
+boardChecks.buzzer.onchange = () => controller.log('board_feedback_settings', { buzzer: boardChecks.buzzer.checked });
+boardChecks.vibrate.onchange = () => controller.log('board_feedback_settings', { vibrate: boardChecks.vibrate.checked });
+
+// ---------------------------------------------------------------- lost link: back by itself
+/**
+ * After an unexpected link loss, retry the same device without any click and start a new recording
+ * in the same session. The gap is in the file (segments + device_reconnected), and the default
+ * export then takes the whole session, so nothing is left in a second file.
+ */
+async function tryReconnect() {
+  const c = controller;
+  if (!ui.armed || ui.reconnecting || c.acquisition !== 'idle' || c.connection === 'connected' || c.session?.status !== 'recording') return;
+  if (ui.reconnectAttempts >= 300) return; // about 15 min: the board is off or the battery is dead
+  ui.reconnecting = true;
+  ui.reconnectAttempts++;
+  try {
+    if (await c.reconnect()) {
+      const started = await c.startAcquisition();
+      c.log('auto_restart', { ok: started.ok, attempts: ui.reconnectAttempts, reason: started.reason ?? null });
+      if (started.ok) ui.reconnectAttempts = 0;
+      boardSend('TDVER');
+    }
+  } finally {
+    // Each failed connect can take seconds; the 1 s loop simply retries when this one ends.
+    ui.reconnecting = false;
+  }
+}
+
+// ---------------------------------------------------------------- what only the board knows
+function boardSummary() {
+  const c = controller;
+  const parts = [];
+  parts.push(ui.boardBattery === null ? 'Board battery: known about 10 s after Start' : `Board battery ${ui.boardBattery}%${ui.boardBattery <= 20 ? ' · LOW' : ''}`);
+  parts.push(ui.firmware ? `firmware ${ui.firmware}` : 'firmware not reported');
+  parts.push(`button ${ui.buttonPresses}${ui.lastButton ? ` (last: ${ui.lastButton})` : ''}`);
+  const m = mirror.state;
+  if (!m.on) parts.push('disk copy off');
+  else if (m.failed) parts.push('DISK COPY FAILING');
+  else parts.push(`disk copy ${(m.bytes / 1e6).toFixed(1)} MB`);
+  if (ui.armed && c.acquisition !== 'acquiring') parts.push(`link lost, reconnecting (try ${ui.reconnectAttempts})`);
+  return parts.join(' · ');
+}
+
+/** The firmware has already beeped the click count. A refused action gets the two-tone alert on top. */
+async function handleButton(text) {
+  const press = parseButton(text);
+  if (!press) return;
+  const c = controller;
+  const action = buttonAction(press.clicks, { acquiring: c.acquisition === 'acquiring', videoRunning: ui.videoRunning });
+  const when = `button, first press ${press.offsetMs} ms before this mark`;
+  const mark = (note) => { ui.markers.unshift(c.mark(`${note} (${when})`)); ui.lastButton = note; };
+  const videoNote = (to) => markerNote(ui.sessionFormat, 'v').replace('start', to);
+  const refuse = (reason) => {
+    ui.lastButton = `refused: ${reason}`;
+    c.log('button_refused', { clicks: press.clicks, reason });
+    boardFeedback(2, 'button_refused', { vibrate: false });
+  };
+  ui.buttonPresses++;
+  if (action.kind === 'refuse') refuse(action.reason);
+  else if (action.kind === 'marker') mark(`marker ${ui.buttonPresses}`);
+  else if (action.kind === 'video') { ui.videoRunning = action.to === 'start'; mark(videoNote(action.to)); }
+
+  render();
+}
+window.__breathworkButton = handleButton; // DevTools inspection and simulator tests only
+
+if (transport.kind === 'ble') {
+  transport.on('control', (text) => {
+    if (text.startsWith('TD-')) {
+      ui.firmware = text;
+      controller.log('firmware_version', { version: text });
+      render();
+    } else {
+      handleButton(text);
+    }
+  });
+  transport.on('battery', (pct) => {
+    if (pct !== ui.boardBattery) controller.log('board_battery', { percent: pct });
+    ui.boardBattery = pct;
+    for (const limit of [20, 10]) {
+      if (pct <= limit && !ui.batteryAlerted.has(limit)) {
+        ui.batteryAlerted.add(limit);
+        monitor.tones.orange?.();
+        boardFeedback(1, `battery_${limit}`, { vibrate: false });
+      }
+    }
+    render();
+  });
+}
+// Ask the firmware its version as soon as a connection exists: it goes in the file.
+{
+  let wasConnected = false;
+  controller.subscribe(() => {
+    const connected = controller.connection === 'connected';
+    if (connected && !wasConnected) boardSend('TDVER');
+    wasConnected = connected;
+  });
+}
+
+// ---------------------------------------------------------------- leaving the page
+window.addEventListener('beforeunload', (event) => {
+  const c = controller;
+  mirror.flush();
+  const unexported = c.session && c.health?.samples > 0 && ui.exportedSession !== c.session.id;
+  if (c.acquisition === 'acquiring' || unexported) { event.preventDefault(); event.returnValue = ''; }
+});

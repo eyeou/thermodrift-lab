@@ -10,18 +10,29 @@ const LETTERS = '<svg viewBox="0 0 77.37 30" aria-hidden="true">'
 
 const diamond = () => h('span', { class: 'td-diamond', 'aria-hidden': 'true' });
 
-/** Logo, diamond and LAB, as a link when `href` is given. */
+/** The public site: www.thermodrift.com, or the local site on port 8080 when the app runs on this machine. */
+function siteRoot() {
+  const local = ['localhost', '127.0.0.1'].includes(globalThis.location?.hostname);
+  return local ? `http://${globalThis.location.hostname}:8080` : 'https://www.thermodrift.com';
+}
+
+/**
+ * Logo, diamond and LAB. With `href` given, the logo leads to the site's front page and LAB to its Lab
+ * page, so a visitor in an app can always get back to the showcase.
+ */
 export function brand({ logo, href }) {
-  const parts = [
-    h('img', { class: 'td-logo', src: logo, width: 1172, height: 227, alt: 'Thermodrift' }),
+  const img = h('img', { class: 'td-logo', src: logo, width: 1172, height: 227, alt: 'Thermodrift' });
+  const letters = h('span', { class: 'td-lab-letters', role: 'img', 'aria-label': 'Lab', html: LETTERS });
+  if (!href) return h('div', { class: 'td-brand' }, img, diamond(), letters);
+  const site = siteRoot();
+  return h('div', { class: 'td-brand' },
+    h('a', { class: 'td-brand-link', href: `${site}/`, 'aria-label': 'Thermodrift, home page' }, img),
     diamond(),
-    h('span', { class: 'td-lab-letters', role: 'img', 'aria-label': 'Lab', html: LETTERS }),
-  ];
-  return href ? h('a', { class: 'td-brand', href, 'aria-label': 'Thermodrift Lab home' }, parts) : h('div', { class: 'td-brand' }, parts);
+    h('a', { class: 'td-brand-link', href: `${site}/lab`, 'aria-label': 'Thermodrift Lab' }, letters));
 }
 
 /** The app's own name, further right: Thermodrift ◆ LAB ◆ name. */
 export function appName(name, caption) {
   return h('div', { class: 'td-app-id' }, diamond(),
-    h('div', { class: 'td-app-name' }, h('strong', { text: name }), h('span', { class: 'td-caption', text: caption })));
+    h('div', { class: 'td-app-name' }, h('strong', { text: name }), caption ? h('span', { class: 'td-caption', text: caption }) : null));
 }

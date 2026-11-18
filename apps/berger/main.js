@@ -11,9 +11,12 @@ import { createCanvas, drawTrace, drawSpectrum } from '../../src/ui/charts/canva
 import { pairsCard, timeCourseCard, timeCourseFrom } from '../../src/ui/charts/report.js';
 import { placementSvg, placementViews } from '../../src/ui/components/placement.js';
 import { createTabs } from '../../src/ui/components/tabs.js';
-import { createProtocolGuide } from '../../src/ui/components/protocol-guide.js';
-import { BERGER_EXAMPLE, exampleButton, exampleView } from '../../src/ui/components/example-results.js';
+import { createProtocolGuide, needsList } from '../../src/ui/components/protocol-guide.js';
+import { BERGER_EXAMPLE, exampleButton, exampleView, pairsSvg } from '../../src/ui/components/example-results.js';
+import { bundleStage, mainsFigure, placementStage, signalFigure } from '../../src/ui/components/guide-figures.js';
+import { svgHost } from '../../src/ui/charts/report.js';
 import { LabController } from '../../src/lab/controller.js';
+import { deviceBadge } from '../../src/ui/components/device-badge.js';
 import { controlStates, protocolCard, statusItems, humanLabel, sharedReason } from '../../src/lab/viewmodel.js';
 import { BergerV3WindowEngine, pairedResults } from '../../src/analysis/berger-v3.js';
 import { createDisplayProcessor } from '../../src/core/display-reference.js';
@@ -96,11 +99,12 @@ window.__bergerLab = controller; // DevTools inspection only
 
 // ---------------------------------------------------------------- header, notices, status
 const sessionLabel = h('span', { class: 'td-caption td-mono', text: 'No session yet' });
+const sourceBadge = deviceBadge({ simulated });
 root.append(h('header', { class: 'td-header' },
   brand({ href: '../', logo: '../../brand/thermodrift-logo.png' }),
-  appName(APP.name, `v${APP.version} · eyes-open / eyes-closed alpha · analysis plan berger-v3`),
+  appName(APP.name),
   h('span', { class: 'td-spacer' }),
-  h('span', { class: 'td-source', dataset: { kind: simulated ? 'simulated' : 'ble' } }, statusIcon(simulated ? 'simulated' : 'live'), simulated ? 'Simulated test pattern' : 'NPG Lite · Bluetooth'),
+  sourceBadge.el,
   sessionLabel));
 const notices = h('div');
 root.append(notices);
@@ -128,7 +132,12 @@ root.append(h('div', { class: 'bl-transport', role: 'toolbar', 'aria-label': 'Ac
 
 // ---------------------------------------------------------------- 01 setup
 const montageSelect = h('select', {}, ...Object.values(MONTAGES).map((m) => h('option', { value: m.id, text: m.label })));
-const montageFigure = h('div', { class: 'td-plates', role: 'group', tabindex: '0', 'aria-label': 'Electrode placement figures' });
+const montageFigure = h('div', { class: 'td-plates', role: 'group', 'aria-label': 'Electrode placement figures' });
+// Up to a tablet the plates show one at a time, chosen by name; on a phone with larger pins and the
+// site names left to the lead list. A wider screen shows them side by side.
+const platesOne = globalThis.matchMedia?.('(max-width: 980px)');
+const platesPhone = globalThis.matchMedia?.('(max-width: 640px)');
+for (const query of [platesOne, platesPhone]) query?.addEventListener?.('change', () => renderMontage());
 const leadList = h('div', { class: 'td-lead-list' });
 const montageNotes = h('p', { class: 'td-caption' });
 const checks = { battery_only: h('input', { type: 'checkbox' }), contact: h('input', { type: 'checkbox' }), routing: h('input', { type: 'checkbox' }) };
@@ -147,7 +156,7 @@ const panel = (index, title, kicker, ...body) => h('section', { class: 'td-panel
 const setupPanel = panel('01', 'Setup', null,
   field('Montage', montageSelect), montageFigure,
   h('div', { class: 'td-setup-columns' },
-    h('div', {}, leadList, montageNotes),
+    h('div', { class: 'td-setup-left' }, leadList, montageNotes, needsList(GUIDE.needs)),
     h('div', {},
       field('Pads', padSelect),
       h('div', { class: 'td-field' }, h('span', { text: 'Before acquisition' }),
@@ -204,18 +213,26 @@ const markerNote = h('input', { type: 'text', placeholder: 'What happened? (opti
 const markerButton = actionButton({ onClick: () => addMarker() });
 const markerList = h('ul', { class: 'bl-markers' });
 const tabLive = h('span', { class: 'td-tab-live', role: 'status' });
-const guideView = createProtocolGuide({ guide: GUIDE, blockName: humanLabel, goToTab: (id) => mainTabs.select(id) });
+const guideVisuals = {
+  placement: () => placementStage(currentMontage().leads),
+  mains: () => mainsFigure({ distance: 'about 1 m' }),
+  signal: () => signalFigure('eeg'),
+  results: () => h('figure', { class: 'td-stage-figure' }, svgHost((width) => pairsSvg(BERGER_EXAMPLE, { width }), 380).el,
+    h('figcaption', { class: 'td-caption', text: 'An example, not a recording. Each pair gives one ratio, eyes closed over eyes open.' })),
+  bundle: () => bundleStage(),
+};
+const guideView = createProtocolGuide({ guide: GUIDE, blockName: humanLabel, goToTab: (id) => mainTabs.select(id), visuals: guideVisuals });
 const protocolReason = h('p', { class: 'td-why', role: 'status', hidden: true });
+const cueField = h('div', { class: 'td-field td-cue-field' }, h('span', { text: 'Spoken cues (optional check)' }), cueButton.el,
+  h('label', { class: 'td-check' }, heardCheck, h('span', { text: 'I heard it clearly' })), heardWhy);
 const protocolLauncher = h('div', { class: 'td-protocol-run' },
-  h('div', { class: 'td-field' }, h('span', { text: 'Spoken cues' }), cueButton.el,
-    h('label', { class: 'td-check' }, heardCheck, h('span', { text: 'I heard it clearly' })), heardWhy),
   h('div', { class: 'bl-protocol-settings' }, field('Eye-state blocks', blockSelect), field('Audio', audioSelect)),
   protocolList);
 const protocolPanel = panel('03', 'Protocol', null, guideView.el);
 const runPanel = h('aside', { class: 'td-panel td-rail', 'aria-label': 'Run a protocol' },
   h('header', {}, h('h2', { text: 'Run' })),
   h('div', { class: 'td-protocol-run' }, blockCard, abortButton.el, protocolLauncher,
-    h('div', { class: 'td-field' }, h('span', { text: 'Marker (movement, noise, missed cue…)' }), h('div', { class: 'bl-marker-row' }, markerNote, markerButton.el), markerList)));
+    h('div', { class: 'td-field' }, h('span', { text: 'Marker (movement, noise, missed cue…)' }), h('div', { class: 'bl-marker-row' }, markerNote, markerButton.el), markerList), cueField));
 
 // ---------------------------------------------------------------- 04 results
 const resultsBody = h('div', { class: 'td-body' });
@@ -240,6 +257,7 @@ const mainTabs = createTabs({
   ],
 });
 root.append(h('main', { class: 'td-main td-main--tabs' }, mainTabs.el));
+guideView.mountRail(runPanel);
 
 // ---------------------------------------------------------------- setup wiring
 const currentMontage = () => MONTAGES[ui.montageId];
@@ -270,11 +288,13 @@ function pushSetup() {
 
 function renderMontage() {
   const m = currentMontage();
-  montageFigure.replaceChildren(...placementViews(m.leads).map((view) => h('figure', { class: 'td-plate', html: placementSvg(view, m.leads) })));
+  montageFigure.replaceChildren(...(platesOne?.matches ? [placementStage(m.leads, { list: false, compact: !!platesPhone?.matches })]
+    : placementViews(m.leads).map((view) => h('figure', { class: 'td-plate', html: placementSvg(view, m.leads) }))));
   leadList.replaceChildren(...m.leads.map((l) => h('div', { class: 'td-lead' }, h('i', { style: `background:${l.cableColor}` }), h('strong', { text: l.pin }), h('span', { text: `${l.siteLabel} · ${l.cable} cable · ${l.role}` }))));
   setText(montageNotes, m.notes);
   setText(routingText, `Wiring checked: ${m.routingCheck}`);
   setText(channelTitle, m.channelNames[0]);
+  guideView.refreshVisual();
 }
 
 montageSelect.onchange = () => { ui.montageId = montageSelect.value; checks.routing.checked = false; ui.setup.routing = false; renderMontage(); pushSetup(); };
@@ -384,12 +404,14 @@ function paint(forceCharts) {
   const states = controlStates(c, { missingSetup: missingSetup(), protocols: entries, deviceLabel: simulated ? 'simulator' : 'NPG' });
   for (const [key, button] of Object.entries(buttons)) button.update(states[key]);
   setText(sessionLabel, c.session ? `Session ${c.session.id} · ${c.session.status}` : 'No session yet');
-  statusStrip.replaceChildren(...statusItems(c).map((item) => h('span', { class: 'td-status', dataset: { tone: item.tone }, title: item.detail ?? '' },
+  sourceBadge.update(c);
+  statusStrip.replaceChildren(...statusItems(c).filter((item) => item.tone === 'warning' || item.tone === 'error' || item.tone === 'stale').map((item) => h('span', { class: 'td-status', dataset: { tone: item.tone }, title: item.detail ?? '' },
     statusIcon(item.tone), h('span', { class: 'td-status-label', text: item.label }), h('span', { class: 'td-status-value', text: item.value }))));
 
   for (const el of setupFields) el.disabled = c.locked;
   lockedNote.hidden = !c.locked;
   blockSelect.disabled = audioSelect.disabled = c.protocol.running;
+  guideView.setDevice(c.connection === 'connected' || c.acquisition === 'acquiring' || c.protocol.running, c.protocol.running);
 
   // Protocol buttons are rebuilt only when their content changes, so focus survives renders.
   const signature = `${ui.audioCondition}|${entries.map((e) => `${e.name}:${e.detail}`).join('|')}`;

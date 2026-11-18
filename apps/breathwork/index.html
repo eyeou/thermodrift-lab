@@ -6,6 +6,10 @@
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#070A22">
   <title>Breathwork · Thermodrift Lab</title>
+  <script>
+    // One address only: browser storage is per origin, and a session recorded on localhost is invisible from 127.0.0.1.
+    if (location.hostname === 'localhost') location.replace(`http://127.0.0.1:${location.port}${location.pathname}${location.search}${location.hash}`);
+  </script>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="../../src/design/tokens.css">
   <link rel="stylesheet" href="../../src/design/instrument.css">

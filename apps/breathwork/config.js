@@ -11,9 +11,9 @@ import { BERGER_V3, analysisFilterDescription, blockSummary } from '../../src/an
 import { effectiveAdherence } from '../../src/analysis/adherence.js';
 import { median } from '../../src/core/stats.js';
 import { plannedSeconds } from '../../src/protocol/berger-protocol.js';
-import { breathSignalCheckProtocol, breathRestProtocol, BREATH_COMPLETION_CUES, BREATH_PROTOCOL_VERSION } from '../../src/protocol/breath-protocol.js';
+import { breathSignalCheckProtocol, BREATH_COMPLETION_CUES, BREATH_PROTOCOL_VERSION } from '../../src/protocol/breath-protocol.js';
 
-export const APP = Object.freeze({ id: 'breathwork-lab', name: 'Breathwork', version: '0.3.0', versionLabel: 'Breathwork-Lab-0.3.0', analysisPlan: 'breathwork-1' });
+export const APP = Object.freeze({ id: 'breathwork-lab', name: 'Breathwork', version: '0.4.0-dev', versionLabel: 'Breathwork-Lab-0.4.0-dev', analysisPlan: 'breathwork-1' });
 
 /** Channel whose live windows summarise the EEG (channel 2, Oz, in every montage). */
 export const EEG_CHANNEL = 1;
@@ -173,9 +173,7 @@ export function blockName(label) {
 export function protocolEntries({ simulated = false } = {}) {
   const speech = !simulated;
   const entries = [
-    { name: 'breath-check', index: '01', label: 'Signal check', detail: '4 min · still, eyes closed, slow breathing, shrugs, deep breaths, short hold', create: () => breathSignalCheckProtocol(), requireCueCheck: true, requireSpeech: speech, primary: true },
-    { name: 'rest-before', index: '02', tabTitle: 'Rest before', label: 'Rest before the session', detail: '3 min · 1 min eyes open, 2 min eyes closed · then start your session', create: () => breathRestProtocol('before'), requireCueCheck: true, requireSpeech: speech },
-    { name: 'rest-after', index: '03', tabTitle: 'Rest after', label: 'Rest after the session', detail: '3 min · same as before', create: () => breathRestProtocol('after'), requireCueCheck: true, requireSpeech: speech },
+    { name: 'breath-check', index: '01', label: 'Signal check', detail: '4 min · still, eyes closed, slow breathing, shrugs, deep breaths, short hold', create: () => breathSignalCheckProtocol(), requireCueCheck: false, requireSpeech: speech, primary: true },
   ];
   if (simulated) entries.push({ name: 'breath-demo', index: 'D', tabTitle: 'Flow demo', label: 'Flow demo (simulated only)', detail: '42 s · the signal-check blocks, 6 s each · not an experiment', create: demoProtocol });
   return entries;
@@ -219,7 +217,6 @@ export const SESSION_FORMATS = Object.freeze({
     parts: Object.freeze([{ kind: 'breathing', seconds: 2400 }, { kind: 'closing', seconds: 240 }, { kind: 'recovery', seconds: 960 }]),
     care: 'Run the long format with a trained facilitator present.',
     markers: Object.freeze({ v: 'music start', r: 'recovery start' }),
-    completionCues: Object.freeze({ 'rest-before': 'Rest done. Open your eyes. Press V when the music starts.' }),
   }),
 });
 
@@ -244,15 +241,13 @@ export function completionCue(protocolName, formatId) {
   return formatOf(formatId).completionCues?.[protocolName] ?? BREATH_COMPLETION_CUES[protocolName];
 }
 
-/** The plan of a whole sitting, in order. The check and the rests come from the protocols that run. */
+/** The plan of a whole sitting, in order. The check comes from the protocol that runs. */
 export function sessionTimeline(formatId = DEFAULT_SESSION_FORMAT) {
   const format = formatOf(formatId);
   const plain = (protocol) => [{ kind: 'plain', seconds: plannedSeconds(protocol) }];
   return [
     { names: ['Signal check', 'Check'], parts: plain(breathSignalCheckProtocol()) },
-    { names: ['Rest before', 'Rest'], parts: plain(breathRestProtocol('before')) },
     { names: [`Your session, ${format.length}`, 'Your session'], parts: format.parts },
-    { names: ['Rest after', 'Rest'], parts: plain(breathRestProtocol('after')) },
   ];
 }
 
@@ -260,19 +255,18 @@ const BASE_GUIDE = Object.freeze({
   question: 'What happens in the body and the brain during a breathing session, and how much of it can actually be measured?',
   needs: ['NPG Lite with VibZ+ for six channels', 'Gold cups with paste for the head', 'Adhesive patches for ECG, EOG and EMG', 'Tape and a measuring tape', 'A phone on a tripod, if you want the video'],
   steps: [
-    { title: 'Place the electrodes', text: 'Follow the figures, with paste, gauze and tape for the gold cups. Leave a taped cable loop near each patch, so a pull never reaches the skin.', tab: 'setup', tabLabel: 'Open the figures' },
-    { title: 'Fix the room', text: 'Keep the kit on a mat, taped down. Keep the laptop on battery and at least a metre away, because a laptop next to the kit can raise mains pickup.' },
-    { title: 'Lie down and look', text: 'Arms at your sides, palms up. Start acquisition and look for beats on the ECG. If the 0–100 Hz spectrum shows narrow lines at 33 and 67 Hz, check the contacts and the wiring.', tab: 'signal', tabLabel: 'Open the signal' },
-    { title: 'Signal check', text: 'Stillness, eyes closed, slow breathing, shrugs, deep breaths and a short hold, so each signal can be seen responding.', protocol: 'breath-check' },
-    { title: 'Rest before', text: 'One minute with eyes open, two with eyes closed. It is the baseline for everything after.', protocol: 'rest-before' },
-    { title: 'Your session' },
-    { title: 'Rest after', text: 'The same three minutes. Stay lying until it ends.', protocol: 'rest-after' },
-    { title: 'Export', text: 'Each recording gives one file, and a test run stays flagged as a test. Write your notes before looking at any signal.', tab: 'recordings', tabLabel: 'Open the recordings' },
+    { title: 'Place the electrodes', text: 'Follow the figures, with paste, gauze and tape for the gold cups. Leave a taped cable loop near each patch, so a pull never reaches the skin.', tab: 'setup', tabLabel: 'Open the figures', visual: 'placement' },
+    { title: 'Fix the room', text: 'Keep the kit on a mat, taped down. Keep the laptop on battery and at least a metre away, because a laptop next to the kit can raise mains pickup. Use desktop Chrome or Edge, which can reach the board over Bluetooth.', visual: 'mains' },
+    { title: 'Lie down and look', text: 'Arms at your sides, palms up. Connect, start acquisition and look for beats on the ECG. If the 0–100 Hz spectrum shows narrow lines at 33 and 67 Hz, check the contacts and the wiring.', tab: 'signal', tabLabel: 'Open the signal', visual: 'signal' },
+    { title: 'Signal check', text: 'Stillness, eyes closed, slow breathing, shrugs, deep breaths and a short hold, so each signal can be seen responding. You can test the spoken cue at the bottom of the Run panel first.', protocol: 'breath-check' },
+    { title: 'Rest before', text: 'Lie still with your eyes closed and let your body settle before you start. Keep your jaw loose.' },
+    { title: 'Your session', visual: 'session' },
+    { title: 'Rest after', text: 'Stay lying and relax again until you feel settled.' },
+    { title: 'Confirm and read', text: 'Mark each block you followed and each one you did not. A block the app has excluded stays excluded.', tab: 'results', tabLabel: 'Open the results' },
+    { title: 'Export', text: 'Each recording gives one file, with the raw samples, the analysis windows, the events and a checksum for every file. A test run stays flagged as a test. Write your notes before looking at any signal.', tab: 'recordings', tabLabel: 'Open the recordings', visual: 'bundle' },
   ],
   protocols: {
     'breath-check': { purpose: 'Does each signal behave as expected under the conditions of the session?' },
-    'rest-before': { purpose: 'The baseline: identical to the rest after, so the two can be compared.' },
-    'rest-after': { purpose: 'The same blocks as the rest before.' },
     'breath-demo': { purpose: 'The signal-check blocks at 6 s each, for trying the interface. Not an experiment.' },
   },
   care: 'Stay lying down, never in or near water, standing or driving. Stop for chest pain, faintness or anything unusual. With a heart condition, epilepsy or a pregnancy, ask a doctor first.',
